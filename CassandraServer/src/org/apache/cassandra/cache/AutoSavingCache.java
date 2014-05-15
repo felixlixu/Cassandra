@@ -249,8 +249,5 @@ public class AutoSavingCache<K extends CacheKey, V> extends
 			}
 		}
 		
-	}
-
-
-	
+	}	
 }
