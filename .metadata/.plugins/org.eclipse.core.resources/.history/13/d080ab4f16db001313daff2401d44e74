@@ -1,0 +1,40 @@
+package org.apache.cassandra.net;
+
+import java.io.IOError;
+import java.io.IOException;
+import java.net.InetAddress;
+
+import org.apache.cassandra.db.ReadVerbHandler;
+import org.apache.cassandra.db.Row;
+import org.apache.cassandra.service.ReadCallback;
+import org.apache.cassandra.service.StorageService.Verb;
+
+public class MessagingService implements MessagingServiceMBean {
+
+    private static class MSHandle
+    {
+        public static final MessagingService instance = new MessagingService();
+    }
+	
+	public static MessagingService instance() {
+		return MSHandle.instance;
+	}
+
+	public void registerVerbHandlers(Verb read, ReadVerbHandler readVerbHandler) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	/**
+	 * Send a message to a given endpoint.similar to sendRR
+	 * */
+	public void sendRR(MessageProducer producer, InetAddress to,
+			ReadCallback<Row> cb) {
+		try{
+			return sendRR(producer.getMessage(Gossiper.instance.getVersion(to)),to,cb);
+		}catch(IOException ex){
+			throw new IOError(ex);
+		}
+	}
+
+}

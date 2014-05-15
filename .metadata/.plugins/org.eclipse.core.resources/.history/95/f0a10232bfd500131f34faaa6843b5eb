@@ -1,0 +1,8 @@
+package org.apache.cassandra.db;
+
+public abstract class AbstractColumnContainer  {
+
+	public boolean isEmpty(){
+		return columns.isEmpty();
+	}
+}

@@ -1,0 +1,11 @@
+package org.apache.cassandra.service;
+
+public class LocalReadRunnable implements Runnable {
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+
+	}
+
+}

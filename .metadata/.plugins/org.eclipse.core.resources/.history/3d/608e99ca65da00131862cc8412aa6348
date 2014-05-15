@@ -1,0 +1,180 @@
+package org.apache.cassandra.service;
+
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
+import org.apache.cassandra.concurrent.Stage;
+import org.apache.cassandra.concurrent.StageManager;
+import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.db.IMutation;
+import org.apache.cassandra.db.ReadCommand;
+import org.apache.cassandra.db.Row;
+import org.apache.cassandra.db.RowMutation;
+import org.apache.cassandra.thrift.ConsistencyLevel;
+import org.apache.cassandra.thrift.UnavailableException;
+import org.apache.cassandra.utils.FBUtilities;
+import org.apache.cassandra.utils.LatencyTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class StorageProxy implements StorageProxyMBean {
+
+	private static final Logger logger = LoggerFactory
+			.getLogger(StorageProxy.class);
+
+	private static final LatencyTracker readStats = new LatencyTracker();
+	
+	public static final StorageProxy instance = new StorageProxy();
+
+	private static final WritePerformer standardWritePerformer;
+
+	private static final WritePerformer counterWritePerformer;
+
+	private static WritePerformer counterWriteOnCoordinatorPerformer;
+
+	public static List<Row> read(List<ReadCommand> commands,
+			ConsistencyLevel consistency_level) throws UnavailableException {
+		if (StorageService.instance.isBootstrapMode())
+			throw new UnavailableException();
+		long startTime = System.nanoTime();
+		List<Row> rows;
+		try {
+			rows = fetchRows(commands, consistency_level);
+		} finally {
+			readStats.addNano(System.nanoTime() - startTime);
+		}
+		return rows;
+	}
+
+	private StorageProxy() {
+	
+	}
+
+	static {
+		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+
+		try {
+			mbs.registerMBean(new StorageProxy(), new ObjectName(
+					"org.apache.cassandra.db:type=StorageProxy"));
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+		standardWritePerformer = new WritePerformer() {
+			public void apply(IMutation mutation,
+					Collection<InetAddress> targets,
+					IWriteResponseHandler responseHandler,
+					String localDataCenter, ConsistencyLevel consistency_level)
+					throws IOException, TimeoutException {
+				assert mutation instanceof RowMutation;
+				sendToHintedEndpoints((RowMutation) mutation, targets,
+						responseHandler, localDataCenter, consistency_level);
+			}
+		};
+
+		counterWritePerformer = new WritePerformer() {
+			public void apply(IMutation mutation,
+					Collection<InetAddress> targets,
+					IWriteResponseHandler responseHandler,
+					String localDataCenter, ConsistencyLevel consistency_level)
+					throws IOException {
+				if (logger.isDebugEnabled())
+					logger.debug("insert writing local & replicate "
+							+ mutation.toString(true));
+
+				Runnable runnable = counterWriteTask(mutation, targets,
+						responseHandler, localDataCenter, consistency_level);
+				runnable.run();
+			}
+		};
+
+        counterWriteOnCoordinatorPerformer = new WritePerformer()
+        {
+            public void apply(IMutation mutation,
+                              Collection<InetAddress> targets,
+                              IWriteResponseHandler responseHandler,
+                              String localDataCenter,
+                              ConsistencyLevel consistency_level)
+            throws IOException
+            {
+                if (logger.isDebugEnabled())
+                    logger.debug("insert writing local & replicate " + mutation.toString(true));
+
+                Runnable runnable = counterWriteTask(mutation, targets, responseHandler, localDataCenter, consistency_level);
+                StageManager.getStage(Stage.MUTATION).execute(runnable);
+            }
+        };
+	}
+
+	private static List<Row> fetchRows(List<ReadCommand> initialCommands,
+			ConsistencyLevel consistency_level) throws UnavailableException {
+		List<Row> rows = new ArrayList<Row>(initialCommands.size());
+		List<ReadCommand> commandsToRetry = Collections.emptyList();
+		do {
+			List<ReadCommand> commands = commandsToRetry.isEmpty() ? initialCommands
+					: commandsToRetry;
+			ReadCallback<Row>[] readCallbacks = new ReadCallback[commands
+					.size()];
+			if (!commandsToRetry.isEmpty()) {
+				logger.debug("Retrying {} commands", commandsToRetry.size());
+			}
+
+			for (int i = 0; i < commands.size(); i++) {
+				ReadCommand command = commands.get(i);
+				assert !command.isDigestQuery();
+				logger.debug("Command/ConsistencyLevel is {}/{}", command,
+						consistency_level);
+
+				List<InetAddress> endpoints = StorageService.instance
+						.getLiveNaturalEndpoints(command.table, command.key);
+				DatabaseDescriptor.getEndpointSnitch().sortByProximity(FBUtilities.getBroadcastAddress(),endpoints);
+				RowDigestResolver resolver=new RowDigestResolver(command.table,command.key);
+				ReadCallback<Row> handler=getReadCallback(resolver,command,consistency_level,endpoints);
+				handler.assureSufficientLiveNodes();
+				assert !handler.endpoints.isEmpty();
+			}
+		} while (!commandsToRetry.isEmpty());
+		return rows;
+	}
+
+	private static <T> ReadCallback<T> getReadCallback(
+			RowDigestResolver resolver, ReadCommand command,
+			ConsistencyLevel consistency_level,List<InetAddress> endpoints) {
+		if(consistency_level==ConsistencyLevel.LOCAL_QUORUM||consistency_level==ConsistencyLevel.EACH_QUORUM){
+			return new DatacenterReadCallback(resolver,consistency_level,command,endpoints);
+		}
+		return new ReadCallback(resolver,consistency_level,command,endpoints);
+	}
+
+	protected static Runnable counterWriteTask(IMutation mutation,
+			Collection<InetAddress> targets,
+			IWriteResponseHandler responseHandler, String localDataCenter,
+			ConsistencyLevel consistency_level) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	protected static void sendToHintedEndpoints(RowMutation mutation,
+			Collection<InetAddress> targets,
+			IWriteResponseHandler responseHandler, String localDataCenter,
+			ConsistencyLevel consistency_level) {
+		// TODO Auto-generated method stub
+
+	}
+
+	public interface WritePerformer {
+		public void apply(IMutation mutation, Collection<InetAddress> target,
+				IWriteResponseHandler responseHandler, String localDataCenter,
+				ConsistencyLevel consistency_level) throws IOException,
+				TimeoutException;
+	}
+}

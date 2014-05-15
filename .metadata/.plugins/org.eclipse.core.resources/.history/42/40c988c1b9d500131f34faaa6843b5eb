@@ -1,0 +1,6 @@
+package org.apache.cassandra.concurrent;
+
+public enum Stage {
+	READ,
+	MUTATION;
+}

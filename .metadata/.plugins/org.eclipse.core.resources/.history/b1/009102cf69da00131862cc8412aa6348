@@ -1,0 +1,23 @@
+package org.apache.cassandra.concurrent;
+
+import java.util.EnumMap;
+import java.util.concurrent.ThreadPoolExecutor;
+
+public class StateManager {
+
+	private static EnumMap<Stage, ThreadPoolExecutor> stages = new EnumMap<Stage, ThreadPoolExecutor>(Stage.class);
+
+	static{
+		stages.put(Stage.READ, multiThreadedConfigurableStage(Stage.READ,getConcurrentReaders()));
+	}
+	
+    private static ThreadPoolExecutor multiThreadedConfigurableStage(Stage stage, int numThreads)
+    {
+        return new JMXConfigurableThreadPoolExecutor(numThreads,
+                                                     KEEPALIVE,
+                                                     TimeUnit.SECONDS,
+                                                     new LinkedBlockingQueue<Runnable>(),
+                                                     new NamedThreadFactory(stage.getJmxName()),
+                                                     stage.getJmxType());
+    }
+}

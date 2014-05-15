@@ -1,0 +1,71 @@
+package org.apache.cassandra.config;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+
+import org.apache.cassandra.scheduler.IRequestScheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class DatabaseDescriptor {
+
+	private static Logger logger=LoggerFactory.getLogger(DatabaseDescriptor.class);
+	
+	private static Config conf;
+	private final static String DEFAULT_CONFIGURATION="cassandra.yaml";
+	
+	
+	static
+	{
+		try{
+			if(conf==null){
+				URL url=getStorageConfigURL();
+				logger.info("Loading settings from "+url);
+				InputStream input=null;
+				try{
+					input=url.openStream();
+				}catch(IOException e){
+					throw new AssertionError(e);
+				}
+			}
+		}catch(ConfigurationException e){
+            logger.error("Fatal configuration error", e);
+            System.err.println(e.getMessage() + "\nFatal configuration error; unable to start server.  See log for stacktrace.");
+            System.exit(1);
+		}catch (YAMLException e)
+        {
+            logger.error("Fatal configuration error error", e);
+            System.err.println(e.getMessage() + "\nInvalid yaml; unable to start server.  See log for stacktrace.");
+            System.exit(1);
+        }
+	}
+	
+	static URL getStorageConfigURL(){
+		String configUrl=System.getProperty("cassandra.config");
+		if(configUrl==null){
+			configUrl=DEFAULT_CONFIGURATION;
+		}
+		URL url;
+		try{
+			url=new URL(configUrl);
+			url.openStream().close();
+		}catch(Exception e){
+			ClassLoader loader=DatabaseDescriptor.class.getClassLoader();
+			url=loader.getResource(configUrl);
+			if(url==null)
+				throw new ConfigurationException("Cannot locate"+configUrl);
+		}
+		return url;
+	}
+	
+	public static Long getRpcTimeout() {
+		return conf.rpc_timeout_in_ms;
+	}
+
+	public static IRequestScheduler getRequestScheduler() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

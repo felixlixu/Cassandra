@@ -1,0 +1,12 @@
+package org.apache.cassandra.service;
+
+import java.nio.ByteBuffer;
+
+public class RowRepairResolver extends AbstractRowResolver {
+
+	public RowRepairResolver(ByteBuffer key, String table) {
+		super(key, table);
+		// TODO Auto-generated constructor stub
+	}
+
+}

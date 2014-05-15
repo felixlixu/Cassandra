@@ -1,0 +1,8 @@
+package org.apache.cassandra.io.sstable;
+
+public class Descriptor {
+
+	public final String ksname;
+	public final String cfname;
+
+}

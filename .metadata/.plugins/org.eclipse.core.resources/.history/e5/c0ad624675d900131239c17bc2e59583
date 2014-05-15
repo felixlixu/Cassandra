@@ -1,0 +1,15 @@
+package org.apache.cassandra.db.filter;
+
+import org.apache.cassandra.db.DecoratedKey;
+
+public class QueryFilter {
+
+	private static final Logger logger = LoggerFactory.getLogger(QueryFilter.class);
+	
+	public static Object getIdentityFilter(DecoratedKey decoratedKey,
+			QueryPath queryPath) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

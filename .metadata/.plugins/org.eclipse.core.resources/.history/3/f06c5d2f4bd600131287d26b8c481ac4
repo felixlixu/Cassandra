@@ -1,0 +1,6 @@
+package org.apache.cassandra.net;
+
+public interface IMessageCallback {
+
+	public boolean isLatencyForSnitch();
+}

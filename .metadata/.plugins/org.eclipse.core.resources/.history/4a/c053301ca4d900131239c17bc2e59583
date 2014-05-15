@@ -1,0 +1,13 @@
+package org.apache.cassandra.db.filter;
+
+import java.nio.ByteBuffer;
+
+import org.apache.cassandra.utils.FBUtilities;
+
+public class NamesQueryFilter implements IFilter {
+
+	public NamesQueryFilter(ByteBuffer column) {
+		this(FBUtilities.singleton(column));
+	}
+
+}

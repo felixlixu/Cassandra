@@ -1,0 +1,21 @@
+package org.apache.cassandra.config;
+
+import org.apache.cassandra.scheduler.IRequestScheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class DatabaseDescriptor {
+
+	private static Logger logger=LoggerFactory.getLogger(DatabaseDescriptor.class);
+	
+	public static Object getRpcTimeout() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static IRequestScheduler getRequestScheduler() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

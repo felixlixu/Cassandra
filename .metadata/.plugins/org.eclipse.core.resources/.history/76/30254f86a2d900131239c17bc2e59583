@@ -1,0 +1,11 @@
+package org.apache.cassandra.db.filter;
+
+import java.nio.ByteBuffer;
+
+public class NamesQueryFilter {
+
+	public NamesQueryFilter(ByteBuffer superColumnName) {
+		// TODO Auto-generated constructor stub
+	}
+
+}

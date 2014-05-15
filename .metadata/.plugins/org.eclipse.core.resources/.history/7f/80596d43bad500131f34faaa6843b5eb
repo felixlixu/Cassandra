@@ -1,0 +1,21 @@
+package org.apache.cassandra.utils;
+
+import java.util.Arrays;
+
+public class EstimatedHistogram {
+
+	private long[] bucketOffsets;
+	final AtomicLongArray buckets;
+	
+    public void add(long n)
+    {
+        int index = Arrays.binarySearch(bucketOffsets, n);
+        if (index < 0)
+        {
+            // inexact match, take the first bucket higher than n
+            index = -index - 1;
+        }
+        // else exact match; we're good
+        buckets.incrementAndGet(index);
+    }
+}

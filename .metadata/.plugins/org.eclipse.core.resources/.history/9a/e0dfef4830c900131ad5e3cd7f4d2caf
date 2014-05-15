@@ -1,0 +1,18 @@
+package org.apache.cassandra.thrift;
+
+import org.apache.cassandra.config.Schema;
+import org.apache.cassandra.db.KeyspaceNotDefinedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ThriftValidation {
+
+	private static Logger logger=LoggerFactory.getLogger(ThriftValidation.class);
+
+	public static void validateTable(String tablename) throws KeyspaceNotDefinedException {
+		if(!Schema.instance.getTables().contains(tablename)){
+			throw new KeyspaceNotDefinedException("Keyspace " + tablename + " does not exist");
+		}
+	}
+	
+}

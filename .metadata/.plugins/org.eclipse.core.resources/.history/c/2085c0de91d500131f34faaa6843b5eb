@@ -1,0 +1,6 @@
+package org.apache.cassandra.locator;
+
+public class TokenMetadata {
+
+	private static Logger logger = LoggerFactory.getLogger(TokenMetadata.class);
+}

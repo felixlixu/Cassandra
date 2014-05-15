@@ -1,0 +1,139 @@
+package org.apache.cassandra.config;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+
+import org.apache.cassandra.config.Config.RequestSchedulerId;
+import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.locator.IEndpointSnitch;
+import org.apache.cassandra.scheduler.IRequestScheduler;
+import org.apache.cassandra.scheduler.NoScheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Loader;
+import org.yaml.snakeyaml.TypeDescription;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.error.YAMLException;
+
+public class DatabaseDescriptor {
+
+	private static Logger logger = LoggerFactory
+			.getLogger(DatabaseDescriptor.class);
+
+	private static Config conf;
+	private final static String DEFAULT_CONFIGURATION = "cassandra.yaml";
+
+	private static IRequestScheduler requestScheduler;
+	private static IPartitioner partitioner;
+	private static RequestSchedulerOptions requestSchedulerOptions;
+
+	private static RequestSchedulerId requestSchedulerId;
+
+	private static IEndpointSnitch snitch;
+
+	static {
+		try {
+			if (conf == null) {
+				URL url = getStorageConfigURL();
+				logger.info("Loading settings from " + url);
+				InputStream input = null;
+				try {
+					input = url.openStream();
+				} catch (IOException e) {
+					throw new AssertionError(e);
+				}
+				Constructor constructor = new Constructor(Config.class);
+				TypeDescription seedDesc = new TypeDescription(
+						SeedProviderDef.class);
+				seedDesc.putMapPropertyType("parameters", String.class,
+						String.class);
+				constructor.addTypeDescription(seedDesc);
+				Yaml yaml = new Yaml(new Loader(constructor));
+				conf = (Config) yaml.load(input);
+			}
+			requestSchedulerOptions = conf.request_scheduler_options;
+			if (conf.request_scheduler != null) {
+				try {
+					if (requestSchedulerOptions == null) {
+						requestSchedulerOptions = new RequestSchedulerOptions();
+					}
+					Class cls = Class.forName(conf.request_scheduler);
+					requestScheduler = (IRequestScheduler) cls.getConstructor(
+							RequestSchedulerOptions.class).newInstance(
+							requestSchedulerOptions);
+				} catch (ClassNotFoundException e) {
+					throw new ConfigurationException(
+							"Invalid Request Scheduler class "
+									+ conf.request_scheduler);
+				} catch (Exception e) {
+					throw new ConfigurationException(
+							"Unable to instantiate request scheduler", e);
+				}
+			} else {
+				requestScheduler = new NoScheduler();
+			}
+			if(conf.endpoint_snitch==null){
+				throw new ConfigurationException("Missing endpoint_snitch directive");
+			}
+			snitch=createEndpointSnitch(conf.endpoint_snitch);
+			EndpointSnitchInfo.create();
+		} catch (ConfigurationException e) {
+			logger.error("Fatal configuration error", e);
+			System.err
+					.println(e.getMessage()
+							+ "\nFatal configuration error; unable to start server.  See log for stacktrace.");
+			System.exit(1);
+		} catch (YAMLException e) {
+			logger.error("Fatal configuration error error", e);
+			System.err
+					.println(e.getMessage()
+							+ "\nInvalid yaml; unable to start server.  See log for stacktrace.");
+			System.exit(1);
+		}
+	}
+
+	static URL getStorageConfigURL() throws ConfigurationException {
+		String configUrl = System.getProperty("cassandra.config");
+		if (configUrl == null) {
+			configUrl = DEFAULT_CONFIGURATION;
+		}
+		URL url;
+		try {
+			url = new URL(configUrl);
+			url.openStream().close();
+		} catch (Exception e) {
+			ClassLoader loader = DatabaseDescriptor.class.getClassLoader();
+			url = loader.getResource(configUrl);
+			if (url == null)
+				throw new ConfigurationException("Cannot locate" + configUrl);
+		}
+		return url;
+	}
+
+	public static Long getRpcTimeout() {
+		return conf.rpc_timeout_in_ms;
+	}
+
+	public static IRequestScheduler getRequestScheduler() {
+		return requestScheduler;
+	}
+
+	public static IPartitioner getPartitioner() {
+		return partitioner;
+	}
+
+	public static RequestSchedulerId getRequestSchedulerId() {
+		return requestSchedulerId;
+	}
+
+	public static IEndpointSnitch getEndpointSnitch() {
+		return snitch;
+	}
+
+	public static void setEndpointSnitch(IEndpointSnitch eps) {
+		snitch = eps;
+	}
+
+}

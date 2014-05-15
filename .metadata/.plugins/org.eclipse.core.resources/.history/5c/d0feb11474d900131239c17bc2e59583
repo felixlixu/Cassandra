@@ -1,0 +1,46 @@
+package org.apache.cassandra.cache;
+
+import java.io.DataInputStream;
+import java.io.File;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.db.DecoratedKey;
+import org.apache.cassandra.service.CacheService;
+import org.apache.cassandra.utils.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class AutoSavingCache<K extends CacheKey, V> extends InstrumentingCache<K,V> {
+
+	private static final Logger logger = LoggerFactory.getLogger(AutoSavingCache.class);
+	
+	protected final CacheService.CacheType cacheType;
+	
+	public Set<DecoratedKey> readSaved(String ksName, String cfName) {
+		File path=getCachePath(ksName,cfName);
+		Set<DecoratedKey> keys=new TreeSet<DecoratedKey>();
+		if(path.exists()){
+			DataInputStream in=null;
+			try{
+				long start=System.currentTimeMillis();
+			}catch(Exception e){
+				logger.warn(String.format("error reading saved cache %s", path.getAbsolutePath()), e);
+			}finally{
+				FileUtils.closeQuietly(in);
+			}
+		}
+		return keys;
+	}
+
+	public AutoSavingCache(ICache<K,V> cache,CacheService.CacheType cacheType){
+		super(cache);
+		this.cacheType=cacheType;
+	}
+	
+	public File getCachePath(String ksName, String cfName) {
+		return DatabaseDescriptor.getSerializedCachePath(ksName,cfName,cacheType);
+	}
+
+}

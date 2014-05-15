@@ -1,0 +1,11 @@
+package org.apache.cassandra.cache;
+
+public class InstrumentingCache<K, V> {
+
+	private final ICache<K,V> map;
+	
+	public InstrumentingCache(ICache<K, V> map) {
+		this.map=map;
+	}
+
+}

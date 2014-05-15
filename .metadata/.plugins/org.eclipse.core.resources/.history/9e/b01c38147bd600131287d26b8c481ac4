@@ -1,0 +1,10 @@
+package org.apache.cassandra.cache;
+
+public class RowCacheKey implements CacheKey,Comparable<RowCacheKey> {
+
+	@Override
+	public int compareTo(RowCacheKey otherKey) {
+		return (cfId < otherKey.cfId) ? -1 : ((cfId == otherKey.cfId) ? ByteBufferUtil.compareUnsigned(key, otherKey.key) : 1);
+	}
+
+}

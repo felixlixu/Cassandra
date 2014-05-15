@@ -1,0 +1,15 @@
+package org.apache.cassandra.db;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
+
+	private static Logger logger=LoggerFactory.getLogger(ColumnFamilyStore.class);
+	
+	public void initRowCache() {
+		long start=System.currentTimeMillis();
+		AutoSavingCache<RowCacheKey,ColumnFamily> rowCache=CacheService.instance.rowCache;
+	}
+
+}

@@ -1,0 +1,6 @@
+package org.apache.cassandra.net;
+
+public class Header {
+
+	private final InetAddress from_;
+}

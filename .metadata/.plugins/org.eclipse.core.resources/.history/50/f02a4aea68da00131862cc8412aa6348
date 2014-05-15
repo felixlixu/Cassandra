@@ -1,0 +1,6 @@
+package org.apache.cassandra.concurrent;
+
+public class StateManager {
+
+	private static EnumMap<Stage, ThreadPoolExecutor> stages = new EnumMap<Stage, ThreadPoolExecutor>(Stage.class);
+}

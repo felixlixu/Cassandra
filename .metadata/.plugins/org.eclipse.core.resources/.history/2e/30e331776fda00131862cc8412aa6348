@@ -1,0 +1,9 @@
+package org.apache.cassandra.net;
+
+public class MessagingService implements MessagingServiceMBean {
+
+	public static MessagingService instance() {
+		return MSHandle.instance;
+	}
+
+}

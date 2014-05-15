@@ -1,0 +1,9 @@
+package org.apache.cassandra.net;
+
+import java.io.IOException;
+
+public interface MessageProducer {
+
+	MessageProducer getMessage(Integer version) throws IOException;
+
+}

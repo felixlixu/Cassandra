@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<typeInfoHistroy>
+<typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.dht{AbstractPartitioner.java[AbstractPartitioner" modifiers="1025" timestamp="1399359517424"/>
+<typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.db.filter{IFilter.java[IFilter" modifiers="513" timestamp="1399858542777"/>
+<typeInfo handle="=CassandraMetaData/src&lt;org.apache.cassandra.thrift{Cassandra.java[Cassandra[Iface" modifiers="513" timestamp="1398063246076"/>
+<typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.service{AbstractRowResolver.java[AbstractRowResolver" modifiers="1025" timestamp="1399960305500"/>
+<typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.net{IAsyncCallback.java[IAsyncCallback" modifiers="513" timestamp="1399510445868"/>
+</typeInfoHistroy>

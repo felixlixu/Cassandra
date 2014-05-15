@@ -1,0 +1,13 @@
+package org.apache.cassandra.net;
+
+import java.net.InetAddress;
+
+public class Message {
+
+	final Header header_;
+	
+	public InetAddress getFrom() {
+		return header_.getFrom();
+	}
+
+}

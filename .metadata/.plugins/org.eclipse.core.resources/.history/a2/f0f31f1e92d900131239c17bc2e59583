@@ -1,0 +1,21 @@
+package org.apache.cassandra.db.filter;
+
+import java.nio.ByteBuffer;
+
+public class QueryPath {
+
+	public final ByteBuffer superColumnName;
+	public final ByteBuffer columnName;
+	public final String columnFamilyName;
+	
+	public QueryPath(String columnFamilyName,ByteBuffer superColumnName,ByteBuffer columnName){
+		this.columnFamilyName=columnFamilyName;
+		this.columnName=columnName;
+		this.superColumnName=superColumnName;
+	}
+	
+	public QueryPath(String column_family, ByteBuffer byteBuffer) {
+		this(column_family,byteBuffer,null);
+	}
+
+}

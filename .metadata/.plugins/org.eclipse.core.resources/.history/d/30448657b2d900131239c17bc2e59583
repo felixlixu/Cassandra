@@ -1,0 +1,11 @@
+package org.apache.cassandra.db.compaction;
+
+import java.io.Serializable;
+
+public class CompactionInfo implements Serializable {
+
+	public static abstract class Holder {
+
+	}
+
+}

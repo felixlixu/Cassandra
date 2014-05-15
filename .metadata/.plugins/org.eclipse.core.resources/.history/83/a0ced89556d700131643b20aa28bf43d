@@ -1,0 +1,15 @@
+package org.apache.cassandra.cache;
+
+import java.nio.ByteBuffer;
+
+import javax.management.Descriptor;
+
+import org.apache.cassandra.utils.Pair;
+
+public class KeyCacheKey extends Pair<Descriptor,ByteBuffer> implements CacheKey  {
+
+	public KeyCacheKey(Descriptor desc,ByteBuffer key) {
+		super(desc,key);
+	}
+
+}

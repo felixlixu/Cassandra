@@ -1,0 +1,13 @@
+package org.apache.cassandra.db;
+
+import java.util.Iterator;
+
+public class TreeMapBackedSortedColumns extends AbstractThreadUnsafeSortedColumns implements ISortedColumns {
+
+	@Override
+	public Iterator<IColumn> iterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

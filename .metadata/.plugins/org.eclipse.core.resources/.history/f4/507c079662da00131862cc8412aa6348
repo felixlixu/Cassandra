@@ -1,0 +1,11 @@
+package org.apache.cassandra.service;
+
+import java.nio.ByteBuffer;
+
+public class RowDigestResolver extends AbstractRowResolver {
+
+	public RowDigestResolver(String table, ByteBuffer key) {
+		super(key,table);
+	}
+
+}

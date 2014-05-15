@@ -1,0 +1,22 @@
+package org.apache.cassandra.config;
+
+public class Config {
+
+	public Long rpc_timeout_in_ms=new Long(2000);
+
+	public String request_scheduler;
+
+	public RequestSchedulerOptions request_scheduler_options;
+
+	public String endpoint_snitch;
+
+	public boolean dynamic_snitch=true;
+
+	public String listen_address;
+
+	public Object broadcast_address;
+	
+	public static enum RequestSchedulerId{
+		keyspace
+	}
+}

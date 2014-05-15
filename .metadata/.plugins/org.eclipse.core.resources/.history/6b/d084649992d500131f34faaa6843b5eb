@@ -1,0 +1,32 @@
+package org.apache.cassandra.locator;
+
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.cassandra.dht.RingPosition;
+import org.apache.cassandra.dht.Token;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * A abstract parent for all replication strategies. 
+ * **/
+public abstract class AbstractReplicationStrategy {
+
+	private static final Logger logger=LoggerFactory.getLogger(AbstractReplicationStrategy.class);
+
+	public List<InetAddress> getNaturalEndpoints(RingPosition serachPosition) {
+		Token searchToken=serachPosition.getToken();
+		Token keyToken=TokenMetadata.firstToekn(tokenMetadata.sortedTokens(),searchToken);
+		
+		ArrayList<InetAddress> endpoints=getCacheEndpoints(keyToken);
+		if(endpoints==null){
+			TokenMetadata tokenMetadataClone=tokenMetadata.cloneOnlyTokenMap();
+			keyToken=TokenMetadata.firstToken(tokenMetadataClone.sortedTokens(),searchToken);
+			endpoints=new ArrayList<InetAddress>(calculateNaturalEndpoints(searchToken, tokenMetadataClone));
+			cacheEndpoints(keyToken,endpoints);
+		}
+		return new ArrayList<InetAddress>(endpoints);
+	}
+}
