@@ -1,0 +1,9 @@
+package org.apache.cassandra.db;
+
+import org.apache.cassandra.utils.FBUtilities;
+
+public interface IColumn {
+
+	public static final int MAX_NAME_LENGTH = FBUtilities.MAX_UNSIGNED_SHORT;
+
+}

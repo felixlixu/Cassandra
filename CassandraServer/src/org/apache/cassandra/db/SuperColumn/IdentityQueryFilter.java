@@ -1,0 +1,7 @@
+package org.apache.cassandra.db.SuperColumn;
+
+import org.apache.cassandra.db.filter.SliceQueryFilter;
+
+public class IdentityQueryFilter extends SliceQueryFilter {
+
+}
