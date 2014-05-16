@@ -1,18 +1,22 @@
 package org.apache.cassandra.db;
 
+import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.KSMetaData;
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.locator.AbstractReplicationStrategy;
 import org.apache.cassandra.service.StorageService;
+import org.apache.cassandra.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +29,7 @@ public class Table {
 	private volatile AbstractReplicationStrategy replicationStrategy;
 	 /* ColumnFamilyStore per column family */
     private final Map<Integer, ColumnFamilyStore> columnFamilyStores = new ConcurrentHashMap<Integer, ColumnFamilyStore>();
+    private final Object[] indexLocks;
     
 	static{
 		if(!StorageService.instance.isClientMode()){
@@ -36,7 +41,7 @@ public class Table {
 		}
 	}
 	
-	public Table(String table) {
+	private Table(String table) {
 		name=table;
 		KSMetaData ksm=Schema.instance.getKSMetaData(table);
 		assert ksm!=null:"Unknown keyspace "+table;
@@ -45,6 +50,34 @@ public class Table {
 		}catch(ConfigurationException e){
 			throw new RuntimeException(e);
 		}
+		indexLocks=new Object[DatabaseDescriptor.getConcurrentWriters()*128];
+		for(int i=0;i<indexLocks.length;i++){
+			indexLocks[i]=new Object();
+		}
+		for(String dataDir:DatabaseDescriptor.getAllDataFileLocations()){
+			try{
+				String keyspaceDir=dataDir+File.separator+table;
+				if(!StorageService.instance.isClientMode()){
+					FileUtils.createDirectory(keyspaceDir);
+				}
+				File streamDir=new File(keyspaceDir,"stream");
+				if(streamDir.exists()){
+					FileUtils.deleteRecursive(streamDir);
+				}
+			}catch(IOException ex){
+				throw new IOError(ex);
+			}
+		}
+		for(CFMetaData cfm:new ArrayList<CFMetaData>(Schema.instance.getTableDefinition(table).cfMetaData().values())){
+            logger.debug("Initializing {}.{}", name, cfm.cfName);
+            initCf(cfm.cfId, cfm.cfName);
+		}
+	}
+
+	public void initCf(Integer cfId, String cfName) {
+		assert !columnFamilyStores.containsKey(cfId) : String.format("tried to init %s as %s, but already used by %s",
+                cfName, cfId, columnFamilyStores.get(cfId));
+		columnFamilyStores.put(cfId, ColumnFamilyStore.createColumnFamilyStore(this,cfName));
 	}
 
 	public void createReplicationStrategy(KSMetaData ksm) throws ConfigurationException {

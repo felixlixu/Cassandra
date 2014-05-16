@@ -31,6 +31,8 @@ public class Config {
 	public double reduce_cache_capacity_to;
 
 	public int concurrent_reads;
+
+	public int concurrent_writes;
 	
 	public static enum RequestSchedulerId{
 		keyspace

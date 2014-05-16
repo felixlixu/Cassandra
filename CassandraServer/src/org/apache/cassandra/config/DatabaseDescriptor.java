@@ -267,4 +267,12 @@ public class DatabaseDescriptor {
 	public static IAuthority getAuthority() {
 		return authority;
 	}
+
+	public static int getConcurrentWriters() {
+		return conf.concurrent_writes;
+	}
+
+	public static String[] getAllDataFileLocations() {
+		return conf.data_file_directories;
+	}
 }

@@ -125,6 +125,7 @@ public class StorageProxy implements StorageProxyMBean {
 		List<Row> rows = new ArrayList<Row>(initialCommands.size());
 		List<ReadCommand> commandsToRetry = Collections.emptyList();
 		do {
+			//create command set and readCallback array.
 			List<ReadCommand> commands = commandsToRetry.isEmpty() ? initialCommands
 					: commandsToRetry;
 			ReadCallback<Row>[] readCallbacks = new ReadCallback[commands

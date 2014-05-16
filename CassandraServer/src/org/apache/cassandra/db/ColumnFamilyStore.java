@@ -1,17 +1,24 @@
 package org.apache.cassandra.db;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.cassandra.cache.AutoSavingCache;
 import org.apache.cassandra.cache.RowCacheKey;
 import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.filter.QueryFilter;
 import org.apache.cassandra.db.filter.QueryPath;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.io.sstable.Descriptor;
 import org.apache.cassandra.service.CacheService;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.utils.DefaultInteger;
 import org.apache.cassandra.utils.EstimatedHistogram;
+import org.apache.cassandra.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +95,27 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
 		this.maxCompactionThreshold=new DefaultInteger(metadata.getMaxCompactionThreshold());
 		
 		this.partitioner=partitioner;
+	}
+
+	public static ColumnFamilyStore createColumnFamilyStore(Table table,
+			String columnFamily) {
+		return createColumnFamilyStore(table, columnFamily, StorageService.getPartitioner(), Schema.instance.getCFMetaData(table.name, columnFamily));
+	}
+
+	private static synchronized ColumnFamilyStore createColumnFamilyStore(Table table,
+			String columnFamily, IPartitioner partitioner,
+			CFMetaData metaData) {
+		List<Integer> generations=new ArrayList<Integer>();
+		/*for(String path:DatabaseDescriptor.getAllDataFileLocationsForTable(table.name)){
+			Iterable<Pair<Descriptor,Component>> pairs=files(new File(path),columnFamily);
+			File incrementalsPath=new File(path,"backups");
+			if(incrementalsPath.exists()){
+				pairs=
+			}
+		}
+		
+		return new ColumnFamilyStore(table,columnFamily,partitioner,value,metadata);*/
+		return null;
 	}
 
 }

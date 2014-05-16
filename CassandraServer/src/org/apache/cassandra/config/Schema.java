@@ -99,4 +99,8 @@ public class Schema {
 		assert ksm!=null;
 		return ksm.cfMetaData();
 	}
+
+	public KSMetaData getTableDefinition(String table) {
+		return getKSMetaData(table);
+	}
 }

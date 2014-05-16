@@ -6,4 +6,6 @@ public interface IFailureDetector {
 
 	boolean isAlive(InetAddress endpoint);
 
+	void registerFailureDetectionEventListener(Gossiper gossiper);
+
 }

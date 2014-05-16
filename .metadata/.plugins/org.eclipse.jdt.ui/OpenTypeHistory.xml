@@ -5,4 +5,5 @@
 <typeInfo handle="=CassandraMetaData/src&lt;org.apache.cassandra.thrift{Cassandra.java[Cassandra[Iface" modifiers="513" timestamp="1398063246076"/>
 <typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.service{AbstractRowResolver.java[AbstractRowResolver" modifiers="1025" timestamp="1399960305500"/>
 <typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.net{IAsyncCallback.java[IAsyncCallback" modifiers="513" timestamp="1399510445868"/>
+<typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.auth{IAuthenticator.java[IAuthenticator" modifiers="513" timestamp="1398058915353"/>
 </typeInfoHistroy>

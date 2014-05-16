@@ -4,12 +4,14 @@ import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.apache.cassandra.concurrent.DebuggableScheduledThreadPoolExecutor;
+import org.apache.cassandra.concurrent.Stage;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.db.ReadVerbHandler;
@@ -27,10 +29,17 @@ public class StorageService implements IEndpointStateChangeSubscriber,StorageSer
 
 	private static Logger logger_ = LoggerFactory.getLogger(StorageService.class);
 	
+	public static int RING_DELAY=getRingDelay();
+	
 	public enum Verb{
 		READ
 		
 	}
+	public static final Verb[] VERBS=Verb.values();
+	public static final EnumMap<StorageService.Verb,Stage> verbStages=new EnumMap<StorageService.Verb,Stage>(StorageService.Verb.class)
+	{{
+		put(Verb.READ,Stage.READ);		
+	}};
 	
 	public static final DebuggableScheduledThreadPoolExecutor optionalTasks=new DebuggableScheduledThreadPoolExecutor("OptionalTasks");
 	private IPartitioner partitioner=DatabaseDescriptor.getPartitioner();
@@ -53,8 +62,19 @@ public class StorageService implements IEndpointStateChangeSubscriber,StorageSer
 			throw new RuntimeException(e);
 		}
 		MessagingService.instance().registerVerbHandlers(Verb.READ,new ReadVerbHandler());
+		//if()
 	}
 	
+	private static int getRingDelay() {
+		String newdelay=System.getProperty("cassandra.ring_delay_ms");
+		if(newdelay!=null){
+			logger_.warn("Overriding RING_DELAY to{}ms",newdelay);
+			return Integer.parseInt(newdelay);
+		}else{
+			return 30*1000;
+		}
+	}
+
 	public static IPartitioner getPartitioner() {
 		return instance.partitioner;
 	}

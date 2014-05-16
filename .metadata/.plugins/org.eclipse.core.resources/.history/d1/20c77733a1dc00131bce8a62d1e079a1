@@ -1,0 +1,278 @@
+package org.apache.cassandra.config;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.URL;
+import java.net.UnknownHostException;
+
+import org.apache.cassandra.auth.AllowAllAuthority;
+import org.apache.cassandra.auth.IAuthenticator;
+import org.apache.cassandra.auth.IAuthority;
+import org.apache.cassandra.config.Config.RequestSchedulerId;
+import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.locator.DynamicEndpointSnitch;
+import org.apache.cassandra.locator.EndpointSnitchInfo;
+import org.apache.cassandra.locator.IEndpointSnitch;
+import org.apache.cassandra.scheduler.IRequestScheduler;
+import org.apache.cassandra.scheduler.NoScheduler;
+import org.apache.cassandra.service.CacheService.CacheType;
+import org.apache.cassandra.utils.FBUtilities;
+import org.apache.cassandra.utils.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Loader;
+import org.yaml.snakeyaml.TypeDescription;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.error.YAMLException;
+
+public class DatabaseDescriptor {
+
+	private static Logger logger = LoggerFactory
+			.getLogger(DatabaseDescriptor.class);
+
+	private static Config conf;
+	private final static String DEFAULT_CONFIGURATION = "cassandra.yaml";
+
+	private static IRequestScheduler requestScheduler;
+	private static IPartitioner partitioner;
+	private static RequestSchedulerOptions requestSchedulerOptions;
+
+	private static RequestSchedulerId requestSchedulerId;
+
+	private static IEndpointSnitch snitch;
+
+	private static InetAddress listenAddress;
+
+	private static InetAddress broadcastAddress;
+	
+	private static IAuthenticator authenticator=new AllowAllAuthenticator();
+	private static IAuthority authority=new AllowAllAuthority();
+
+	static {
+		try {
+			if (conf == null) {
+				URL url = getStorageConfigURL();
+				logger.info("Loading settings from " + url);
+				InputStream input = null;
+				try {
+					input = url.openStream();
+				} catch (IOException e) {
+					throw new AssertionError(e);
+				}
+				Constructor constructor = new Constructor(Config.class);
+				TypeDescription seedDesc = new TypeDescription(
+						SeedProviderDef.class);
+				seedDesc.putMapPropertyType("parameters", String.class,
+						String.class);
+				constructor.addTypeDescription(seedDesc);
+				Yaml yaml = new Yaml(new Loader(constructor));
+				conf = (Config) yaml.load(input);
+			}
+			requestSchedulerOptions = conf.request_scheduler_options;
+			if (conf.request_scheduler != null) {
+				try {
+					if (requestSchedulerOptions == null) {
+						requestSchedulerOptions = new RequestSchedulerOptions();
+					}
+					Class cls = Class.forName(conf.request_scheduler);
+					requestScheduler = (IRequestScheduler) cls.getConstructor(
+							RequestSchedulerOptions.class).newInstance(
+							requestSchedulerOptions);
+				} catch (ClassNotFoundException e) {
+					throw new ConfigurationException(
+							"Invalid Request Scheduler class "
+									+ conf.request_scheduler);
+				} catch (Exception e) {
+					throw new ConfigurationException(
+							"Unable to instantiate request scheduler", e);
+				}
+			} else {
+				requestScheduler = new NoScheduler();
+			}
+			if(conf.endpoint_snitch==null){
+				throw new ConfigurationException("Missing endpoint_snitch directive");
+			}
+			snitch=createEndpointSnitch(conf.endpoint_snitch);
+			EndpointSnitchInfo.create();
+			
+            /* Local IP or hostname to bind services to */
+            if (conf.listen_address != null)
+            {
+                try
+                {
+                    listenAddress = InetAddress.getByName(conf.listen_address);
+                }
+                catch (UnknownHostException e)
+                {
+                    throw new ConfigurationException("Unknown listen_address '" + conf.listen_address + "'");
+                }
+            }
+
+            /* Gossip Address to broadcast */
+            if (conf.broadcast_address != null)
+            {
+                if (conf.broadcast_address.equals("0.0.0.0"))
+                {
+                    throw new ConfigurationException("broadcast_address cannot be 0.0.0.0!");
+                }
+                
+                try
+                {
+                    broadcastAddress = InetAddress.getByName(conf.broadcast_address);
+                }
+                catch (UnknownHostException e)
+                {
+                    throw new ConfigurationException("Unknown broadcast_address '" + conf.broadcast_address + "'");
+                }
+            }
+			
+		} catch (ConfigurationException e) {
+			logger.error("Fatal configuration error", e);
+			System.err
+					.println(e.getMessage()
+							+ "\nFatal configuration error; unable to start server.  See log for stacktrace.");
+			System.exit(1);
+		} catch (YAMLException e) {
+			logger.error("Fatal configuration error error", e);
+			System.err
+					.println(e.getMessage()
+							+ "\nInvalid yaml; unable to start server.  See log for stacktrace.");
+			System.exit(1);
+		}
+	}
+
+	static URL getStorageConfigURL() throws ConfigurationException {
+		String configUrl = System.getProperty("cassandra.config");
+		if (configUrl == null) {
+			configUrl = DEFAULT_CONFIGURATION;
+		}
+		URL url;
+		try {
+			url = new URL(configUrl);
+			url.openStream().close();
+		} catch (Exception e) {
+			ClassLoader loader = DatabaseDescriptor.class.getClassLoader();
+			url = loader.getResource(configUrl);
+			if (url == null)
+				throw new ConfigurationException("Cannot locate" + configUrl);
+		}
+		return url;
+	}
+
+	private static IEndpointSnitch createEndpointSnitch(String endpoint_snitch) throws ConfigurationException {
+		IEndpointSnitch snitch=FBUtilities.construct(endpoint_snitch,"snitch");
+		return conf.dynamic_snitch?new DynamicEndpointSnitch(snitch):snitch;
+	}
+
+	public static Long getRpcTimeout() {
+		return conf.rpc_timeout_in_ms;
+	}
+
+	public static IRequestScheduler getRequestScheduler() {
+		return requestScheduler;
+	}
+
+	public static IPartitioner getPartitioner() {
+		return partitioner;
+	}
+
+	public static RequestSchedulerId getRequestSchedulerId() {
+		return requestSchedulerId;
+	}
+
+	public static IEndpointSnitch getEndpointSnitch() {
+		return snitch;
+	}
+
+	public static void setEndpointSnitch(IEndpointSnitch eps) {
+		snitch = eps;
+	}
+
+	public static InetAddress getListenAddress() {
+		return listenAddress;
+	}
+
+	public static InetAddress getBroadcastAddress() {
+		return broadcastAddress;
+	}
+	
+    public static void setBroadcastAddress(InetAddress broadcastAdd)
+    {
+        broadcastAddress = broadcastAdd;
+    }
+
+	public static void createAllDirectories() throws IOException {
+        try {
+            if (conf.data_file_directories.length == 0)
+            {
+                throw new ConfigurationException("At least one DataFileDirectory must be specified");
+            }
+            for ( String dataFileDirectory : conf.data_file_directories )
+                FileUtils.createDirectory(dataFileDirectory);
+            if (conf.commitlog_directory == null)
+            {
+                throw new ConfigurationException("commitlog_directory must be specified");
+            }
+            FileUtils.createDirectory(conf.commitlog_directory);
+            if (conf.saved_caches_directory == null)
+            {
+                throw new ConfigurationException("saved_caches_directory must be specified");
+            }
+            FileUtils.createDirectory(conf.saved_caches_directory);
+        }
+        catch (ConfigurationException ex) {
+            logger.error("Fatal error: " + ex.getMessage());
+            System.err.println("Bad configuration; unable to start server");
+            System.exit(1);
+        }
+	}
+
+	public static int getRowCacheSavePeriod() {
+		return conf.row_cache_save_period;
+	}
+
+	public static int getKeyCacheSavePeriod() {
+		return conf.key_cache_save_period;
+	}
+
+	public static File getSerializedCachePath(String ksName, String cfName,
+			CacheType cacheType) {
+		return new File(conf.saved_caches_directory+File.separator+ksName+"-"+cfName+"-"+cacheType);
+	}
+
+	public static int getConcurrentCompactors() {
+		return conf.concurrent_compactors;
+	}
+
+	public static double getReduceCacheCapacityTo() {
+		return conf.reduce_cache_capacity_to;
+	}
+
+	public static String getSaveCachesLocation() {
+		return conf.saved_caches_directory;
+	}
+
+    public static int getConcurrentReaders()
+    {
+        return conf.concurrent_reads;
+    }
+    
+	public static IAuthenticator getAuthenticator() {
+		return authenticator;
+	}
+
+	public static IAuthority getAuthority() {
+		return authority;
+	}
+
+	public static int getConcurrentWriters() {
+		return conf.concurrent_writes;
+	}
+
+	public static Object getAllDataFileLocations() {
+		return conf.data_file_directories;
+	}
+}

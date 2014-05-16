@@ -1,0 +1,160 @@
+package org.apache.cassandra.service;
+
+import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
+import org.apache.cassandra.concurrent.DebuggableScheduledThreadPoolExecutor;
+import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.db.DecoratedKey;
+import org.apache.cassandra.db.ReadVerbHandler;
+import org.apache.cassandra.db.Table;
+import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.RingPosition;
+import org.apache.cassandra.gms.FailureDetector;
+import org.apache.cassandra.gms.IEndpointStateChangeSubscriber;
+import org.apache.cassandra.locator.TokenMetadata;
+import org.apache.cassandra.net.MessagingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class StorageService implements IEndpointStateChangeSubscriber,StorageServiceMBean {
+
+	private static Logger logger_ = LoggerFactory.getLogger(StorageService.class);
+	
+	public enum Verb{
+		READ
+		
+	}
+	
+	public static final DebuggableScheduledThreadPoolExecutor optionalTasks=new DebuggableScheduledThreadPoolExecutor("OptionalTasks");
+	private IPartitioner partitioner=DatabaseDescriptor.getPartitioner();
+	private boolean isBootstrapMode;
+	private boolean isClientMode;
+	public static final StorageService instance=new StorageService();
+	private TokenMetadata tokenMetadata_=new TokenMetadata();
+	public static final DebuggableScheduledThreadPoolExecutor tasks=new DebuggableScheduledThreadPoolExecutor("NonPeriodicTasks");
+	
+	
+	static{
+		tasks.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+	}
+	
+	public StorageService(){
+		MBeanServer mbs=ManagementFactory.getPlatformMBeanServer();
+		try{
+			mbs.registerMBean(this,new ObjectName("org.apache.cassandra.db:type=StorageService"));
+		}catch(Exception e){
+			throw new RuntimeException(e);
+		}
+		MessagingService.instance().registerVerbHandlers(Verb.READ,new ReadVerbHandler());
+	}
+	
+	public static IPartitioner getPartitioner() {
+		return instance.partitioner;
+	}
+
+
+	@Override
+	public List<String> getLiveNodes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public List<String> getUnreachableNodes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public List<String> getJoinintNodes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public List<String> getLeavingNodes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public List<String> getMovingNodes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public String getToken() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public String getReleaseVersion() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public boolean isBootstrapMode() {
+		
+		return isBootstrapMode;
+	}
+
+
+	public List<InetAddress> getLiveNaturalEndpoints(String table,
+			ByteBuffer key) {
+		return getLiveNaturalEndpoints(table,partitioner.decorateKey(key));
+	}
+
+	//table=keyspace
+	public List<InetAddress> getLiveNaturalEndpoints(String table,
+			RingPosition pos) {
+		List<InetAddress> liveEps=new ArrayList<InetAddress>();
+		List<InetAddress> endpoints=Table.open(table).getReplicationStrategy().getNaturalEndpoints(pos);
+		
+		for(InetAddress endpoint:endpoints){
+			if(FailureDetector.instance.isAlive(endpoint)){
+				liveEps.add(endpoint);
+			}
+		}
+		return liveEps;
+	}
+
+
+	@Override
+	public String[] getAllDataFileLocations() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public String[] getAllDataFileLoacationsForTable(String table) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public boolean isClientMode() {
+		return isClientMode;
+	}
+
+	public TokenMetadata getTokenMetadata() {
+		return tokenMetadata_;
+	}
+
+}

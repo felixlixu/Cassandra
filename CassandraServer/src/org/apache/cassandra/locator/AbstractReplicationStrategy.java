@@ -46,6 +46,11 @@ public abstract class AbstractReplicationStrategy {
 	
 	public abstract List<InetAddress> calculateNaturalEndpoints(Token searchToken, TokenMetadata tokenMetadata);
 	
+	/**
+	 * get the endpoints that should store the given Token.
+	 * Note that while the endpoints are conceptually a Set(no duplicates will be included),
+	 * we return a List to avoid an extra allocation when sorting by proximity later.
+	 * */
 	public List<InetAddress> getNaturalEndpoints(RingPosition serachPosition) {
 		Token searchToken=serachPosition.getToken();
 		Token keyToken=TokenMetadata.firstToken(tokenMetadata.sortedTokens(),searchToken);

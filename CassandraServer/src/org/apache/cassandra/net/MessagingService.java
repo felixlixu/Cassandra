@@ -3,6 +3,7 @@ package org.apache.cassandra.net;
 import java.io.IOError;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.ReadVerbHandler;
@@ -49,6 +50,12 @@ public class MessagingService implements MessagingServiceMBean {
 		return sendRR(message, to, cb, DEFAULT_CALLBACK_TIMEOUT);
 	}
 
+	/**
+	 * Send a message to a given endpoint. This method specifies a callback
+	 * which is invoked with actual response.
+	 * Also holds the message (only mutation messages) to determine if it needs
+	 * to trigger a hint. 
+	 **/
 	public String sendRR(Message message, InetAddress to, IMessageCallback cb,
 			long timeout) {
 		String id=addCallbck(cb,message,to,timeout);
@@ -56,6 +63,7 @@ public class MessagingService implements MessagingServiceMBean {
 		return id;
 	}
 
+	
 	public void sendOneWay(Message message, String id, InetAddress to) {
 		// TODO Auto-generated method stub
 		
@@ -63,8 +71,15 @@ public class MessagingService implements MessagingServiceMBean {
 
 	public String addCallbck(IMessageCallback cb, Message message,
 			InetAddress to, long timeout) {
-		// TODO Auto-generated method stub
+		String messageId=nextId();
+		CallbackInfo previous;
+		
 		return null;
+	}
+	
+	private static AtomicInteger idGen=new AtomicInteger();
+	private static String nextId(){
+		return Integer.toString(idGen.incrementAndGet());
 	}
 
 }

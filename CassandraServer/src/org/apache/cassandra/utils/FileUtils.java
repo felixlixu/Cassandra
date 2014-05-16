@@ -45,4 +45,27 @@ public class FileUtils {
             logger_.warn("Failed closing " + c, e);
         }
 	}
+
+	public static void deleteRecursive(File dir) throws IOException {
+        if (dir.isDirectory())
+        {
+            String[] children = dir.list();
+            for (String child : children)
+                deleteRecursive(new File(dir, child));
+        }
+
+        // The directory is now empty so now it can be smoked
+        deleteWithConfirm(dir);// TODO Auto-generated method stub
+	}
+	
+    public static void deleteWithConfirm(File file) throws IOException
+    {
+        assert file.exists() : "attempted to delete non-existing file " + file.getName();
+        if (logger_.isDebugEnabled())
+            logger_.debug("Deleting " + file.getName());
+        if (!file.delete())
+        {
+            throw new IOException("Failed to delete " + file.getAbsolutePath());
+        }
+    }
 }

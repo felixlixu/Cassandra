@@ -158,6 +158,9 @@ public class CassandraServer implements Cassandra.Iface {
 		
 	}
 
+	/**
+	 * Schedule the current thread for access to the required services.
+	 * */
 	private void schedule(long timeoutMS) throws TimeoutException {
 		requestScheduler.queue(Thread.currentThread(),state().getShcedulingValue(),timeoutMS);
 	}
