@@ -10,6 +10,7 @@ import java.net.UnknownHostException;
 import org.apache.cassandra.auth.AllowAllAuthority;
 import org.apache.cassandra.auth.IAuthenticator;
 import org.apache.cassandra.auth.IAuthority;
+import org.apache.cassandra.cache.IRowCacheProvider;
 import org.apache.cassandra.config.Config.RequestSchedulerId;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.locator.DynamicEndpointSnitch;
@@ -50,6 +51,8 @@ public class DatabaseDescriptor {
 	
 	private static IAuthenticator authenticator=new AllowAllAuthenticator();
 	private static IAuthority authority=new AllowAllAuthority();
+
+	private static IRowCacheProvider rowCacheProvider;
 
 	static {
 		try {
@@ -97,6 +100,8 @@ public class DatabaseDescriptor {
 			}
 			snitch=createEndpointSnitch(conf.endpoint_snitch);
 			EndpointSnitchInfo.create();
+			
+			rowCacheProvider=FBUtilities.newCacheProvider(conf.row_cache_provider);
 			
             /* Local IP or hostname to bind services to */
             if (conf.listen_address != null)
@@ -274,5 +279,30 @@ public class DatabaseDescriptor {
 
 	public static String[] getAllDataFileLocations() {
 		return conf.data_file_directories;
+	}
+
+	public static boolean hintedHandoffEnabled() {
+		return conf.hinted_handoff_enabled;
+	}
+
+	public static int getRowCacheSizeInMB() {
+		return conf.row_cache_size_in_mb;
+	}
+
+	public static IRowCacheProvider getRowCacheProvider() {
+		return rowCacheProvider;
+	}
+
+	public static int getRowCacheKeysToSave() {
+		return conf.row_cache_keys_to_save;
+	}
+
+	public static int getKeyCacheSizeInMB() {
+		return conf.key_cache_size_in_mb;
+	}
+
+	public static int getKeyCacheKeysToSave() {
+		// TODO Auto-generated method stub
+		return conf.key_cache_to_save;
 	}
 }

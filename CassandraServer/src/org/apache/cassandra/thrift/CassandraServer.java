@@ -14,10 +14,12 @@ import org.apache.cassandra.auth.Permission;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.ColumnFamily;
+import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.Row;
 import org.apache.cassandra.db.SliceByNamesReadCommand;
+import org.apache.cassandra.db.Table;
 import org.apache.cassandra.db.filter.QueryPath;
 import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.ClientState;
@@ -179,7 +181,12 @@ public class CassandraServer implements Cassandra.Iface {
 			SlicePredicate predicate, ConsistencyLevel consistency_level)
 			throws InvalidRequestException, UnavailableException,
 			TimedOutException, TException {
-		// TODO Auto-generated method stub
+		logger.debug("get_count");
+		
+		state().hasColumnFamilyAccess(column_parent.column_family, Permission.READ);
+		Table table=Table.open(state().getKeyspace());
+		ColumnFamilyStore cfs=table.getColumnFamilyStore(column_parent.column_family);
+		
 		return 0;
 	}
 

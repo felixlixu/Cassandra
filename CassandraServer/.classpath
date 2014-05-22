@@ -14,5 +14,6 @@
 	<classpathentry kind="lib" path="D:/Cassandra/CassandraServer/lib/slf4j-api-1.6.1.jar"/>
 	<classpathentry kind="lib" path="D:/Cassandra/CassandraServer/lib/slf4j-log4j12-1.6.1.jar"/>
 	<classpathentry kind="lib" path="D:/Cassandra/CassandraServer/lib/snakeyaml-1.11.jar"/>
+	<classpathentry kind="lib" path="D:/Cassandra/CassandraServer/lib/concurrentlinkedhashmap-lru-1.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

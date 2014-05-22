@@ -31,6 +31,7 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
     private final EstimatedHistogram sstablesPerRead = new EstimatedHistogram(35);
 	
 	static{
+		 // (can block if flush queue fills up, so don't put on scheduledTasks)
 		StorageService.optionalTasks.scheduleWithFixedDelay(new MeteredFlusher(), 1000, 1000, TimeUnit.MILLISECONDS);
 	}
 

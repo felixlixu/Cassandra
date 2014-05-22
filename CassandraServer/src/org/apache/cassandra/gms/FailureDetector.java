@@ -11,4 +11,10 @@ public class FailureDetector implements IFailureDetector, FailureDetectorMBean{
 		// TODO Auto-generated method stub
 		return false;
 	}
+
+	@Override
+	public void registerFailureDetectionEventListener(Gossiper gossiper) {
+		// TODO Auto-generated method stub
+		
+	}
 }

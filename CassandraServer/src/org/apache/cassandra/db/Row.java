@@ -42,7 +42,7 @@ public class Row {
         }
 
 		@Override
-		public Row descrialize(DataInput dis, int version) throws IOException {
+		public Row deserialize(DataInput dis, int version) throws IOException {
 			return deserialize(dis, version, IColumnSerializer.Flag.LOCAL, TreeMapBackedSortedColumns.factory());
 		}
 

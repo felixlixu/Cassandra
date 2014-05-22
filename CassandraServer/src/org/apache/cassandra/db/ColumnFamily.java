@@ -31,4 +31,9 @@ public class ColumnFamily extends AbstractColumnContainer {
 		return null;
 	}
 
+	public static ByteBuffer digest(ColumnFamily cf) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

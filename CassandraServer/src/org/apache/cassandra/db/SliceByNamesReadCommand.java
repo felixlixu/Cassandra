@@ -55,6 +55,12 @@ public class SliceByNamesReadCommand extends ReadCommand {
 		return null;
 	}
 
+	@Override
+	public Row getRow(Table table) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }
 
 class SliceByNamesReadCommandSerializer implements IVersionedSerializer<ReadCommand>
@@ -76,7 +82,7 @@ class SliceByNamesReadCommandSerializer implements IVersionedSerializer<ReadComm
         }
     }
 
-    public SliceByNamesReadCommand descrialize(DataInput dis, int version) throws IOException
+    public SliceByNamesReadCommand deserialize(DataInput dis, int version) throws IOException
     {
         boolean isDigest = dis.readBoolean();
         String table = dis.readUTF();

@@ -1,0 +1,40 @@
+package org.apache.cassandra.net;
+
+import java.net.InetAddress;
+import java.util.Collections;
+import java.util.Map;
+
+import org.apache.cassandra.service.StorageService;
+import org.apache.cassandra.service.StorageService.Verb;
+
+import com.google.common.collect.ImmutableMap;
+
+public class Header {
+
+	private final InetAddress from_;
+	private final StorageService.Verb verb_;
+	private final Map<String,byte[]> details_;
+	
+    Header(InetAddress from, StorageService.Verb verb, Map<String, byte[]> details)
+    {
+        assert from != null;
+        assert verb != null;
+
+        from_ = from;
+        verb_=verb;
+        details_=ImmutableMap.copyOf(details);
+    }
+	
+    public Header(InetAddress from, Verb verb) {
+		this(from,verb,Collections.<String,byte[]>emptyMap());
+	}
+
+	InetAddress getFrom()
+    {
+        return from_;
+    }
+
+	public StorageService.Verb getVerb() {
+		return verb_;
+	}
+}

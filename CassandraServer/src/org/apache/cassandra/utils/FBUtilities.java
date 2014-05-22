@@ -15,6 +15,7 @@ import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.cassandra.cache.IRowCacheProvider;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.locator.IEndpointSnitch;
@@ -209,6 +210,12 @@ public class FBUtilities {
 			Long rpcTimeout) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	public static IRowCacheProvider newCacheProvider(String cache_provider) throws ConfigurationException {
+		if(!cache_provider.contains("."))
+			cache_provider = "org.apache.cassandra.cache." + cache_provider;
+		return FBUtilities.construct(cache_provider, "row cache provider");
 	}
 
 }

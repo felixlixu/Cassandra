@@ -313,19 +313,36 @@ public class StorageProxy implements StorageProxyMBean {
 			this.command=command;
 			this.handler=handler;
 		}
+
+		@Override
+		protected void runMayThrow() throws Exception {
+			// TODO Auto-generated method stub
+			
+		}
 		
 	}
 	
 	private static abstract class DroppableRunnable implements Runnable{
-		private Verb verb;
+		private final Verb verb;
+		private final long constructionTime=System.currentTimeMillis(); 
 
 		public DroppableRunnable(Verb verb) {
 			this.verb=verb;
 		}
 
 		public final void run(){
-			
+			if(System.currentTimeMillis()>constructionTime+DatabaseDescriptor.getRpcTimeout()){
+				MessagingService.instance().incrementDroppedMessage(verb);
+				return;
+			}
+			try{
+				runMayThrow();
+			}catch(Exception e){
+				throw new RuntimeException();
+			}
 		}
+		
+		abstract protected void runMayThrow() throws Exception;
 	}
 	
 }

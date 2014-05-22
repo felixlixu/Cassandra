@@ -1,0 +1,15 @@
+package org.apache.cassandra.net;
+
+import java.net.InetAddress;
+
+public class CallbackInfo {
+
+	protected final InetAddress target;
+	protected final IMessageCallback callback;
+	protected final Message message;
+	
+	public CallbackInfo(InetAddress to, IMessageCallback cb, Message message2) {
+		// TODO Auto-generated constructor stub
+	}
+
+}

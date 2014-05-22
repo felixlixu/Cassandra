@@ -1,0 +1,39 @@
+package org.apache.cassandra.utils;
+
+import org.apache.cassandra.net.CallbackInfo;
+
+import com.google.common.base.Function;
+
+public class ExpiringMap<K, V> {
+
+	private static class CacheableObject<T>{
+		private final T value;
+		private final long createdAt;
+		private final long expiration;
+		CacheableObject(T o,long e){
+			assert o!=null;
+			value=o;
+			expiration=e;;
+			createdAt=System.currentTimeMillis();
+		}
+		T getValue(){
+			return value;
+		}
+		boolean isReadyToDieAt(long time){
+			return ((time-createdAt)>expiration);
+		}
+	}
+	
+	public ExpiringMap(long defaultCallbackTimeout,
+			Function<Pair<K, V>, ?> timeoutReporter) {
+		// TODO Auto-generated constructor stub
+	}
+
+	public CallbackInfo put(K key, V value,
+			long timeout) {
+		CacheableObject<V> previous=cache.put(key,new CacheableObject<V>(value,timeout));
+		return (previous==null)?null:previous.getValue();
+	}
+
+
+}

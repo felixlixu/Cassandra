@@ -1,0 +1,80 @@
+package org.apache.cassandra.net;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.util.Collections;
+import java.util.Map;
+
+import org.apache.cassandra.io.IVersionedSerializer;
+import org.apache.cassandra.service.StorageService;
+import org.apache.cassandra.service.StorageService.Verb;
+
+import com.google.common.collect.ImmutableMap;
+
+public class Header {
+
+	private static HeaderSerializer serializer_;
+	private final InetAddress from_;
+	private final StorageService.Verb verb_;
+	final Map<String,byte[]> details_;
+	
+	static
+	{
+		serializer_=new HeaderSerializer();
+	}
+	
+    Header(InetAddress from, StorageService.Verb verb, Map<String, byte[]> details)
+    {
+        assert from != null;
+        assert verb != null;
+
+        from_ = from;
+        verb_=verb;
+        details_=ImmutableMap.copyOf(details);
+    }
+	
+    public Header(InetAddress from, Verb verb) {
+		this(from,verb,Collections.<String,byte[]>emptyMap());
+	}
+
+	InetAddress getFrom()
+    {
+        return from_;
+    }
+
+	public StorageService.Verb getVerb() {
+		return verb_;
+	}
+}
+
+class HeaderSerializer implements IVersionedSerializer<Header>
+{
+
+	@Override
+	public void serialize(Header header, DataOutput dos, int version)
+			throws IOException {
+		CompactEndpointSerializationHelper.serialize(header.getFrom(),dos);
+		dos.writeInt(header.getVerb().ordinal());
+		dos.writeInt(header.details_.size());
+		for(String key:header.details_.keySet()){
+			dos.writeUTF(key);
+			byte[] value=header.details_.get(key);
+			dos.writeInt(value.length);
+			dos.write(value);
+		}
+	}
+
+	@Override
+	public Header descrialize(DataInput dis, int version) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public long serializedSize(Header header, int version) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+}

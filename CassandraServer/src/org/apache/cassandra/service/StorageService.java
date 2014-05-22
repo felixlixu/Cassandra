@@ -32,13 +32,14 @@ public class StorageService implements IEndpointStateChangeSubscriber,StorageSer
 	public static int RING_DELAY=getRingDelay();
 	
 	public enum Verb{
-		READ
+		READ, MUTATION, REQUEST_RESPONSE
 		
 	}
 	public static final Verb[] VERBS=Verb.values();
 	public static final EnumMap<StorageService.Verb,Stage> verbStages=new EnumMap<StorageService.Verb,Stage>(StorageService.Verb.class)
 	{{
-		put(Verb.READ,Stage.READ);		
+		put(Verb.READ,Stage.READ);
+		put(Verb.MUTATION,Stage.MUTATION);
 	}};
 	
 	public static final DebuggableScheduledThreadPoolExecutor optionalTasks=new DebuggableScheduledThreadPoolExecutor("OptionalTasks");
@@ -135,6 +136,7 @@ public class StorageService implements IEndpointStateChangeSubscriber,StorageSer
 	}
 
 
+	// covert key to partitioner and then getLiveNaturalEndpoints.
 	public List<InetAddress> getLiveNaturalEndpoints(String table,
 			ByteBuffer key) {
 		return getLiveNaturalEndpoints(table,partitioner.decorateKey(key));

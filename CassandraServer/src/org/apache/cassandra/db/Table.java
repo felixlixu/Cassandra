@@ -95,6 +95,7 @@ public class Table {
 		return open(table,Schema.instance);
 	}
 
+	//table=keyspace-->columnFamilyStore struct is ConcurrentHashMap-->superColumn->column->(Key,Value)
 	private static Table open(String table, Schema instance) {
 		Table tableInstance=instance.getTableInstance(table);
 		if(tableInstance==null){
@@ -118,6 +119,10 @@ public class Table {
 
 	public AbstractReplicationStrategy getReplicationStrategy() {
 		return this.replicationStrategy;
+	}
+
+	public ColumnFamilyStore getColumnFamilyStore(String column_family) {
+		return null;
 	}
 
 }

@@ -1,0 +1,31 @@
+package org.apache.cassandra.net;
+
+import java.net.InetAddress;
+
+import org.apache.cassandra.service.StorageService;
+
+public class Message {
+
+	final Header header_;
+	private byte[] body_;
+	
+	public Message(Header header,byte[] body,int version){
+		assert header !=null;
+		assert body!=null;
+		header_=header;
+		body_=body;
+	}
+	
+	public InetAddress getFrom() {
+		return header_.getFrom();
+	}
+
+	public StorageService.Verb getVerb() {
+		return header_.getVerb();
+	}
+
+	public byte[] getMessageBody() {
+		return body_;
+	}
+
+}

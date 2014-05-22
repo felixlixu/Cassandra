@@ -33,6 +33,18 @@ public class Config {
 	public int concurrent_reads;
 
 	public int concurrent_writes;
+
+	public boolean hinted_handoff_enabled;
+
+	public int row_cache_size_in_mb=0;
+
+	public String row_cache_provider;
+
+	public int row_cache_keys_to_save;
+
+	public int key_cache_size_in_mb=0;
+
+	public int key_cache_to_save;
 	
 	public static enum RequestSchedulerId{
 		keyspace

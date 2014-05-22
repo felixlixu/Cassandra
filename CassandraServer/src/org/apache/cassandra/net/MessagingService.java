@@ -3,6 +3,8 @@ package org.apache.cassandra.net;
 import java.io.IOError;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
@@ -11,7 +13,12 @@ import org.apache.cassandra.db.Row;
 import org.apache.cassandra.gms.Gossiper;
 import org.apache.cassandra.service.ReadCallback;
 import org.apache.cassandra.service.RepairCallback;
+import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.service.StorageService.Verb;
+import org.apache.cassandra.utils.ExpiringMap;
+import org.apache.cassandra.utils.Pair;
+
+import com.google.common.base.Function;
 
 public class MessagingService implements MessagingServiceMBean {
 
@@ -19,6 +26,8 @@ public class MessagingService implements MessagingServiceMBean {
 	public static final int version_=VERSION_11;
 	
 	private static final long DEFAULT_CALLBACK_TIMEOUT = DatabaseDescriptor.getRpcTimeout();
+	 private final Map<StorageService.Verb, AtomicInteger> droppedMessages = new EnumMap<StorageService.Verb, AtomicInteger>(StorageService.Verb.class);
+	private final ExpiringMap<String,CallbackInfo> callbacks;
 	
     private static class MSHandle
     {
@@ -27,6 +36,17 @@ public class MessagingService implements MessagingServiceMBean {
 	
 	public static MessagingService instance() {
 		return MSHandle.instance;
+	}
+	
+	Function<Pair<String,CallbackInfo>,?> timeoutReporter=new Function<Pair<String,CallbackInfo>,Object>(){
+		public Object apply(Pair<String,CallbackInfo> pair){
+			return null;
+		}
+	};
+	
+	public MessagingService(){
+		
+		callbacks=new ExpiringMap<String,CallbackInfo>(DEFAULT_CALLBACK_TIMEOUT,timeoutReporter);
 	}
 
 	public void registerVerbHandlers(Verb read, ReadVerbHandler readVerbHandler) {
@@ -73,13 +93,23 @@ public class MessagingService implements MessagingServiceMBean {
 			InetAddress to, long timeout) {
 		String messageId=nextId();
 		CallbackInfo previous;
+		if(DatabaseDescriptor.hintedHandoffEnabled()&&message.getVerb()==StorageService.Verb.MUTATION){
+			previous=callbacks.put(messageId,new CallbackInfo(to,cb,message),timeout);
+		}else{
+			previous=callbacks.put(messageId,new CallbackInfo(to,cb),timeout);
+		}
+		assert previous==null;
 		
-		return null;
+		return messageId;
 	}
 	
 	private static AtomicInteger idGen=new AtomicInteger();
 	private static String nextId(){
 		return Integer.toString(idGen.incrementAndGet());
+	}
+
+	public void incrementDroppedMessage(Verb verb) {
+		droppedMessages.get(verb).incrementAndGet();
 	}
 
 }
