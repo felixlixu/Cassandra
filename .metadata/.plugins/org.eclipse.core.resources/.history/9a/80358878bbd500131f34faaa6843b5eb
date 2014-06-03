@@ -1,7 +1,0 @@
-package org.apache.cassandra.db;
-
-import org.apache.cassandra.net.MessageProducer;
-
-public class RowMutation implements IMutation,MessageProducer {
-
-}

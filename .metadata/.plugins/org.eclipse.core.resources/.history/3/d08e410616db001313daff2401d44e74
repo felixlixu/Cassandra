@@ -1,5 +1,0 @@
-package org.apache.cassandra.service;
-
-public class DigestMismatchException extends Exception {
-
-}

@@ -1,5 +1,0 @@
-package org.apache.cassandra.cache;
-
-public class RowCacheKey {
-
-}

@@ -1,5 +1,0 @@
-package org.apache.cassandra.gms;
-
-public class Gossiper implements IFailureDetectionEventListener,GossiperMBean {
-
-}

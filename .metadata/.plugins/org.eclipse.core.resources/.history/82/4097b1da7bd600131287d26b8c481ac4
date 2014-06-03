@@ -1,9 +1,0 @@
-package org.apache.cassandra.cache;
-
-public class KeyCacheKey {
-
-	public KeyCacheKey() {
-		// TODO Auto-generated constructor stub
-	}
-
-}

@@ -1,5 +1,0 @@
-package org.apache.cassandra.db.compactiond;
-
-public interface CompactionManagerMBean {
-
-}

@@ -1,9 +1,0 @@
-package org.apache.cassandra.locator;
-
-public class DynamicEndpointSnitch  extends AbstractEndpointSnitch implements ILatencySubscriber, DynamicEndpointSnitchMBean {
-
-	public DynamicEndpointSnitch(IEndpointSnitch snitch) {
-		// TODO Auto-generated constructor stub
-	}
-
-}
