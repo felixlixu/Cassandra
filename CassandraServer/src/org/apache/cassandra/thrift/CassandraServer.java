@@ -124,7 +124,7 @@ public class CassandraServer implements Cassandra.Iface {
 	}
 
 	private List<ColumnOrSuperColumn> thriftifyColumnFamily(ColumnFamily cf,
-			boolean b, boolean c) {
+			boolean subcolumnsOnly, boolean reverseOrder) {
 		if(cf==null||cf.isEmpty()){
 			return EMPTY_COLUMNS;
 		}
@@ -232,7 +232,6 @@ public class CassandraServer implements Cassandra.Iface {
 			Column column, ConsistencyLevel consistency_level)
 			throws InvalidRequestException, UnavailableException,
 			TimedOutException, TException {
-		// TODO Auto-generated method stub
 		
 	}
 
@@ -241,7 +240,11 @@ public class CassandraServer implements Cassandra.Iface {
 			CounterColumn column, ConsistencyLevel consistency_level)
 			throws InvalidRequestException, UnavailableException,
 			TimedOutException, TException {
-		// TODO Auto-generated method stub
+		logger.debug("add");
+		state().hasColumnFamilyAccess(column_parent.column_family, Permission.WRITE);
+		String keyspace=state().getKeyspace();
+		
+		CFMetaData metadata=ThriftValidation.validateColumnFamily(keyspace, column_parent.column_family,true);
 		
 	}
 

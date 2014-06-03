@@ -32,7 +32,9 @@ public class StorageService implements IEndpointStateChangeSubscriber,StorageSer
 	public static int RING_DELAY=getRingDelay();
 	
 	public enum Verb{
-		READ, MUTATION, REQUEST_RESPONSE
+		READ,
+		MUTATION,
+		REQUEST_RESPONSE
 		
 	}
 	public static final Verb[] VERBS=Verb.values();

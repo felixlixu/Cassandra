@@ -120,6 +120,9 @@ public class StorageProxy implements StorageProxyMBean {
         };
 	}
 
+	/**
+	 * This function executes local and remote reads, and blocks for the results 
+	 **/
 	private static List<Row> fetchRows(List<ReadCommand> initialCommands,
 			ConsistencyLevel consistency_level) throws UnavailableException, TimeoutException {
 		List<Row> rows = new ArrayList<Row>(initialCommands.size());

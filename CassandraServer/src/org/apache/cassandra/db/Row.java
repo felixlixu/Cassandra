@@ -9,6 +9,7 @@ import org.apache.cassandra.io.IVersionedSerializer;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.utils.ByteBufferUtil;
 
+//Key value
 public class Row {
 
 	private static RowSerializer serializer=new RowSerializer();

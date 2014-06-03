@@ -1,0 +1,27 @@
+package org.apache.cassandra.io.sstable;
+
+import java.io.File;
+
+import org.apache.cassandra.utils.Pair;
+
+public class Component {
+
+	public static final char separator='-';
+
+	public final static Component DATA = new Component(Type.DATA, -1);
+	
+	public static Pair<Descriptor, Component> fromFilename(File dir, String name) {
+		Pair<Descriptor,String> path=Descriptor.fromFilename(dir,name);
+		Type type=Type.fromRepresentation(path.right);
+		Component component;
+		switch(type){
+			case DATA: component=Component.DATA; break;
+			default:
+				throw new IllegalStateException();
+		}
+		
+		return new Pair<Descriptor,Component>(path.left,component);
+		
+	}
+
+}

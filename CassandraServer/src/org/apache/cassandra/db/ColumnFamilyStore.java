@@ -1,7 +1,9 @@
 package org.apache.cassandra.db;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -13,7 +15,9 @@ import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.filter.QueryFilter;
 import org.apache.cassandra.db.filter.QueryPath;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.io.sstable.Component;
 import org.apache.cassandra.io.sstable.Descriptor;
+import org.apache.cassandra.io.sstable.SSTable;
 import org.apache.cassandra.service.CacheService;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.utils.DefaultInteger;
@@ -21,6 +25,8 @@ import org.apache.cassandra.utils.EstimatedHistogram;
 import org.apache.cassandra.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Iterables;
 
 public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
 
@@ -105,18 +111,51 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
 
 	private static synchronized ColumnFamilyStore createColumnFamilyStore(Table table,
 			String columnFamily, IPartitioner partitioner,
-			CFMetaData metaData) {
+			CFMetaData metadata) {
 		List<Integer> generations=new ArrayList<Integer>();
-		/*for(String path:DatabaseDescriptor.getAllDataFileLocationsForTable(table.name)){
+		for(String path:DatabaseDescriptor.getAllDataFileLocationsForTable(table.name)){
 			Iterable<Pair<Descriptor,Component>> pairs=files(new File(path),columnFamily);
 			File incrementalsPath=new File(path,"backups");
 			if(incrementalsPath.exists()){
-				pairs=
+				pairs=Iterables.concat(pairs,files(incrementalsPath,columnFamily));
+			}
+			for(Pair<Descriptor,Component> pair:pairs){
+				Descriptor desc=pair.left;
+				if(!desc.cfname.equals(columnFamily)){
+					continue;
+				}
+				generations.add(desc.generation);
+				if(!desc.isCompatible()){
+					throw new RuntimeException(String.format("Can't open incompatible SSTable! Current version %s, found file: %s",
+                            Descriptor.CURRENT_VERSION, desc));
+				}
 			}
 		}
+		Collections.sort(generations);
 		
-		return new ColumnFamilyStore(table,columnFamily,partitioner,value,metadata);*/
-		return null;
+		int value = (generations.size() > 0) ? (generations.get(generations.size() - 1)) : 0;
+
+        return new ColumnFamilyStore(table, columnFamily, partitioner, value, metadata);
+	}
+
+	//ColumnFamily = table every SSTABLE has the key= Descriptor value=Component.
+	private static Iterable<Pair<Descriptor, Component>> files(File path,
+			String columnFamilyName) {
+		final List<Pair<Descriptor,Component>> sstables=new ArrayList<Pair<Descriptor,Component>>();
+		final String sstableFilePrefix=columnFamilyName+Component.separator;
+		path.listFiles(new FileFilter(){
+			public boolean accept(File file){
+				if(file.isDirectory()||!file.getName().startsWith(sstableFilePrefix))
+					return false;
+				Pair<Descriptor,Component> pair=SSTable.tryComponentFromFilename(file.getParentFile(),file.getName());
+				
+				if(pair!=null)
+					sstables.add(pair);
+				
+				return false;
+			}
+		});
+		return sstables;
 	}
 
 }

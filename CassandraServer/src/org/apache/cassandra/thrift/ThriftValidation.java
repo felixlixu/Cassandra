@@ -139,5 +139,18 @@ public class ThriftValidation {
 			throw new InvalidRequestException(e.getMessage());
 		}
 	}
+
+	public static CFMetaData validateColumnFamily(String tablename,
+			String cfname, boolean isCommutativeOp) {
+		CFMetaData metadata=validateColumnFamily(tablename,cfname);
+		if(isCommutativeOp){
+			 if (!metadata.getDefaultValidator().isCommutative())
+	                throw new InvalidRequestException("invalid operation for non commutative columnfamily " + cfName);
+		}else{
+			 if (metadata.getDefaultValidator().isCommutative())
+	                throw new InvalidRequestException("invalid operation for commutative columnfamily " + cfName);
+		}
+		return metadata;
+	}
 	
 }

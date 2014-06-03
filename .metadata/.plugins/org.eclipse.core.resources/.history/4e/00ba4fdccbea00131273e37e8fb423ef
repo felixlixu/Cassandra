@@ -1,0 +1,16 @@
+package org.apache.cassandra.io.sstable;
+
+import java.io.File;
+
+import org.apache.cassandra.utils.Pair;
+
+public class Descriptor {
+
+	public  String ksname;
+	public  String cfname;
+	public static Pair<Descriptor, String> fromFilename(File dir, String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

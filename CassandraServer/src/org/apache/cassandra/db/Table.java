@@ -25,6 +25,7 @@ public class Table {
 
 	private static final Logger logger = LoggerFactory.getLogger(Table.class);
 	public static final String SYSTEM_TABLE = "system";
+	public static final String SNAPSHOT_SUBDIR_NAME = "snapshots";
 	public final String name;
 	private volatile AbstractReplicationStrategy replicationStrategy;
 	 /* ColumnFamilyStore per column family */
@@ -68,6 +69,7 @@ public class Table {
 				throw new IOError(ex);
 			}
 		}
+		//cfMetaData= columnFumily meta data.
 		for(CFMetaData cfm:new ArrayList<CFMetaData>(Schema.instance.getTableDefinition(table).cfMetaData().values())){
             logger.debug("Initializing {}.{}", name, cfm.cfName);
             initCf(cfm.cfId, cfm.cfName);

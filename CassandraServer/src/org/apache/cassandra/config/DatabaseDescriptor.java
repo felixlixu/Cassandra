@@ -305,4 +305,12 @@ public class DatabaseDescriptor {
 		// TODO Auto-generated method stub
 		return conf.key_cache_to_save;
 	}
+
+	public static String[] getAllDataFileLocationsForTable(String table) {
+		String[] tableLocations=new String[conf.data_file_directories.length];
+		for(int i=0;i<conf.data_file_directories.length;i++){
+			tableLocations[i]=conf.data_file_directories[i]+File.separator+table;
+		}
+		return tableLocations;
+	}
 }

@@ -1,13 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <qualifiedTypeNameHistroy>
-<fullyQualifiedTypeName name="java.nio.channels.ClosedChannelException"/>
-<fullyQualifiedTypeName name="java.io.EOFException"/>
-<fullyQualifiedTypeName name="java.util.Map.Entry"/>
-<fullyQualifiedTypeName name="org.apache.cassandra.thrift.ColumnPath"/>
-<fullyQualifiedTypeName name="org.apache.cassandra.db.DBConstants"/>
-<fullyQualifiedTypeName name="org.apache.cassandra.db.Row"/>
-<fullyQualifiedTypeName name="java.util.Random"/>
-<fullyQualifiedTypeName name="org.apache.commons.lang.StringUtils"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.thrift.UnavailableException"/>
 <fullyQualifiedTypeName name="java.util.concurrent.ThreadPoolExecutor"/>
 <fullyQualifiedTypeName name="java.util.concurrent.TimeUnit"/>
@@ -32,19 +24,15 @@
 <fullyQualifiedTypeName name="java.util.concurrent.atomic.AtomicInteger"/>
 <fullyQualifiedTypeName name="com.google.common.base.Function"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.utils.Pair"/>
-<fullyQualifiedTypeName name="org.apache.cassandra.db.Table"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.db.ColumnFamilyStore"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.service.StorageService"/>
 <fullyQualifiedTypeName name="java.io.InputStream"/>
 <fullyQualifiedTypeName name="java.util.HashMap"/>
 <fullyQualifiedTypeName name="java.io.DataInputStream"/>
-<fullyQualifiedTypeName name="org.slf4j.Logger"/>
-<fullyQualifiedTypeName name="org.slf4j.LoggerFactory"/>
 <fullyQualifiedTypeName name="java.nio.ByteBuffer"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.utils.ByteBufferUtil"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.io.IColumnSerializer"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.io.IColumnSerializer.Flag"/>
-<fullyQualifiedTypeName name="java.util.Collections"/>
 <fullyQualifiedTypeName name="com.google.common.collect.ImmutableMap"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.io.IVersionedSerializer"/>
 <fullyQualifiedTypeName name="java.net.InetAddress"/>
@@ -60,4 +48,16 @@
 <fullyQualifiedTypeName name="org.apache.cassandra.service.StorageService.Verb"/>
 <fullyQualifiedTypeName name="java.util.EnumMap"/>
 <fullyQualifiedTypeName name="java.util.Map"/>
+<fullyQualifiedTypeName name="org.slf4j.LoggerFactory"/>
+<fullyQualifiedTypeName name="org.apache.log4j.Logger"/>
+<fullyQualifiedTypeName name="org.slf4j.Logger"/>
+<fullyQualifiedTypeName name="java.io.FileFilter"/>
+<fullyQualifiedTypeName name="java.util.EnumSet"/>
+<fullyQualifiedTypeName name="java.awt.Window.Type"/>
+<fullyQualifiedTypeName name="org.apache.cassandra.db.Table"/>
+<fullyQualifiedTypeName name="java.util.StringTokenizer"/>
+<fullyQualifiedTypeName name="org.apache.cassandra.io.sstable.Component"/>
+<fullyQualifiedTypeName name="com.google.common.base.Objects"/>
+<fullyQualifiedTypeName name="com.google.common.collect.Iterables"/>
+<fullyQualifiedTypeName name="java.util.Collections"/>
 </qualifiedTypeNameHistroy>

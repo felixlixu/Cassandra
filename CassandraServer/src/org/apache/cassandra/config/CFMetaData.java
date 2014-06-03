@@ -168,5 +168,8 @@ public final class CFMetaData {
 	public double getReadRepairChance() {
 		return readRepairChance;
 	}
+	public AbstractType getDefaultValidator() {
+		return defaultValidator;
+	}
 
 }

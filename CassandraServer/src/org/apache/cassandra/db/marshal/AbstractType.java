@@ -20,4 +20,8 @@ public abstract class AbstractType<T> implements Comparator<ByteBuffer> {
         return builder.toString();
 	}
 
+	public boolean isCommutative() {
+		return false;
+	}
+
 }
