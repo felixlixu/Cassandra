@@ -1,0 +1,11 @@
+package org.apache.cassandra.db;
+
+public class DataTracker {
+
+	public DataTracker(ColumnFamilyStore cfstore) {
+		this.cfStore=cfstore;
+		this.view=new AtomicReference<View>();
+		this.init();
+	}
+
+}

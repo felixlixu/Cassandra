@@ -15,4 +15,10 @@ public class DynamicEndpointSnitch  extends AbstractEndpointSnitch implements IL
 		return 0;
 	}
 
+	@Override
+	public String getDatacenter(InetAddress endpoint) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

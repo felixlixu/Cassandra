@@ -306,6 +306,8 @@ public class DatabaseDescriptor {
 		return conf.key_cache_to_save;
 	}
 
+	// this is show the rule of data store. It's dic+"\"+tablename
+	// you can many of dic use ';' sepecrator.
 	public static String[] getAllDataFileLocationsForTable(String table) {
 		String[] tableLocations=new String[conf.data_file_directories.length];
 		for(int i=0;i<conf.data_file_directories.length;i++){

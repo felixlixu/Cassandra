@@ -1,0 +1,37 @@
+package org.apache.cassandra.db;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import org.apache.cassandra.db.filter.QueryPath;
+import org.apache.cassandra.net.Message;
+import org.apache.cassandra.net.MessageProducer;
+
+public class RowMutation implements IMutation,MessageProducer {
+
+	private String table_;
+	private ByteBuffer key_;
+
+	public RowMutation(String keyspace, ByteBuffer key) {
+		table_=keyspace;
+		key_=key;
+	}
+
+	@Override
+	public String toString(boolean b) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Message getMessage(Integer version) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public void addCounter(QueryPath queryPath, long value) {
+		// TODO Auto-generated method stub
+		
+	}
+
+}

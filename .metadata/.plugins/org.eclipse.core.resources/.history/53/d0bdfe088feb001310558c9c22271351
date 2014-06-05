@@ -1,0 +1,11 @@
+package org.apache.cassandra.db;
+
+public class CounterMutation implements IMutation {
+
+	@Override
+	public String toString(boolean b) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

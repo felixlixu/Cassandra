@@ -1,0 +1,6 @@
+package org.apache.cassandra.db;
+
+public class Memtable {
+
+	private static final Logger logger = LoggerFactory.getLogger(Memtable.class);
+}

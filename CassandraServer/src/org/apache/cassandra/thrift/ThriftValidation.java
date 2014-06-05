@@ -67,7 +67,7 @@ public class ThriftValidation {
 	}
 
 	private static void validateColumnNames(CFMetaData metadata,
-			ByteBuffer super_column, List<ByteBuffer> column_names) throws InvalidRequestException {
+			ByteBuffer super_column, Iterable<ByteBuffer> column_names) throws InvalidRequestException {
 		if(super_column!=null){
 			if(super_column.remaining()>IColumn.MAX_NAME_LENGTH){
 				throw new InvalidRequestException("supercolumn name length must not be greater than " + IColumn.MAX_NAME_LENGTH);
@@ -141,16 +141,43 @@ public class ThriftValidation {
 	}
 
 	public static CFMetaData validateColumnFamily(String tablename,
-			String cfname, boolean isCommutativeOp) {
+			String cfname, boolean isCommutativeOp) throws InvalidRequestException {
 		CFMetaData metadata=validateColumnFamily(tablename,cfname);
 		if(isCommutativeOp){
 			 if (!metadata.getDefaultValidator().isCommutative())
-	                throw new InvalidRequestException("invalid operation for non commutative columnfamily " + cfName);
+	                throw new InvalidRequestException("invalid operation for non commutative columnfamily " + cfname);
 		}else{
 			 if (metadata.getDefaultValidator().isCommutative())
-	                throw new InvalidRequestException("invalid operation for commutative columnfamily " + cfName);
+	                throw new InvalidRequestException("invalid operation for commutative columnfamily " + cfname);
 		}
 		return metadata;
+	}
+
+	public static void validateCommutativeForWrite(CFMetaData metadata,
+			ConsistencyLevel consistency) throws InvalidRequestException {
+		if(consistency==ConsistencyLevel.ANY){
+			
+		}else if(!metadata.getReplicateOnWrite()&&consistency!=ConsistencyLevel.ONE){
+			throw new InvalidRequestException("cannot achieve CL > CL.ONE without replicate_on_write on columnfamily " + metadata.cfName);
+		}
+	}
+
+	public static void validateColumnParent(CFMetaData metadata,
+			ColumnParent column_parent) throws InvalidRequestException {
+		if(metadata.cfType==ColumnFamilyType.Standard){
+			if(column_parent.super_column!=null){
+				 throw new InvalidRequestException("columnfamily alone is required for standard CF " + metadata.cfName);
+			}
+		}
+		
+		if(column_parent.super_column!=null){
+			validateColumnNames(metadata, (ByteBuffer)null, Arrays.asList(column_parent.super_column));
+		}
+	}
+
+	public static void validateColumnNames(CFMetaData metadata,
+			ColumnParent column_parent, Iterable<ByteBuffer> asList) throws InvalidRequestException {
+		validateColumnNames(metadata,column_parent.super_column,asList);
 	}
 	
 }

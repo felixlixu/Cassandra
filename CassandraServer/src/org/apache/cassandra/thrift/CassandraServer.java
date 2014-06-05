@@ -10,14 +10,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
+import javax.xml.bind.MarshalException;
+
 import org.apache.cassandra.auth.Permission;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.ColumnFamily;
 import org.apache.cassandra.db.ColumnFamilyStore;
+import org.apache.cassandra.db.ColumnFamilyType;
+import org.apache.cassandra.db.CounterMutation;
 import org.apache.cassandra.db.DecoratedKey;
+import org.apache.cassandra.db.IMutation;
 import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.Row;
+import org.apache.cassandra.db.RowMutation;
 import org.apache.cassandra.db.SliceByNamesReadCommand;
 import org.apache.cassandra.db.Table;
 import org.apache.cassandra.db.filter.QueryPath;
@@ -245,7 +251,39 @@ public class CassandraServer implements Cassandra.Iface {
 		String keyspace=state().getKeyspace();
 		
 		CFMetaData metadata=ThriftValidation.validateColumnFamily(keyspace, column_parent.column_family,true);
-		
+		ThriftValidation.validateKey(metadata, key);
+		ThriftValidation.validateCommutativeForWrite(metadata,consistency_level);
+		ThriftValidation.validateColumnParent(metadata,column_parent);
+		if(metadata.cfType==ColumnFamilyType.Super&&column_parent.super_column==null){
+			throw new InvalidRequestException("missing mandatory super column name for super CF " + column_parent.column_family);
+		}
+		ThriftValidation.validateColumnNames(metadata, column_parent, Arrays.asList(column.name));
+		RowMutation rm=new RowMutation(keyspace,key);
+		try{
+			rm.addCounter(new QueryPath(column_parent.column_family,column_parent.super_column, column.name),column.value);
+		}catch(MarshalException e){
+			throw new InvalidRequestException(e.getMessage());
+		}
+		doInsert(consistency_level,Arrays.asList(new CounterMutation(rm, consistency_level)));
+	}
+
+	private void doInsert(ConsistencyLevel consistency_level,
+			List<? extends IMutation> mutations) throws InvalidRequestException, TimedOutException {
+		ThriftValidation.validateConsistencyLevel(state().getKeyspace(), consistency_level, RequestType.WRITE);
+        if (mutations.isEmpty())
+            return;
+        try{
+        	schedule(DatabaseDescriptor.getRpcTimeout());
+        	try{
+        		StorageProxy.mutate(mutations,consistency_level);
+        	}
+        	finally{
+        		release();
+        	}
+        }catch(TimeoutException e){
+        	logger.debug("... timed out");
+        	throw new TimedOutException();
+        }
 	}
 
 	@Override

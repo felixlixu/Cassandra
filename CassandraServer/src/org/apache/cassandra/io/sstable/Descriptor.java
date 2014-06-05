@@ -18,8 +18,9 @@ public class Descriptor {
 	private String version;
 	private File dir;
 	public int generation;
-	private boolean temporary;
+	public boolean temporary;
 	private int hashCode;
+	private Object directory;
 	public static final String LEGACY_VERSION="a";
 	public Descriptor(String version, File dir, String ksname, String cfname,
 			int generation, boolean temp) {
@@ -33,6 +34,14 @@ public class Descriptor {
 		hashCode=Objects.hashCode(dir,generation,ksname,cfname);
 	}
 	
+    /**
+     * Filename of the form "<ksname>/<cfname>-[tmp-][<version>-]<gen>-<component>"
+     *
+     * @param directory The directory of the SSTable files
+     * @param name The name of the SSTable file
+     *
+     * @return A Descriptor for the SSTable, and the Component remainder.
+     */
 	public static Pair<Descriptor, String> fromFilename(File dir, String name) {
 		String ksname=extractKeyspaceName(dir);
 		StringTokenizer st=new StringTokenizer(name,String.valueOf(separator));
@@ -79,6 +88,26 @@ public class Descriptor {
 
 	public boolean isCompatible() {
 		return version.charAt(0)<=CURRENT_VERSION.charAt(0);
+	}
+
+	public String filenameFor(Component component) {
+		return filenameFor(component.name());
+	}
+
+	private String filenameFor(String suffix) {
+		return baseFilename()+separator+suffix;
+	}
+
+	private String baseFilename() {
+        StringBuilder buff = new StringBuilder();
+        buff.append(directory).append(File.separatorChar);
+        buff.append(cfname).append(separator);
+        if (temporary)
+            buff.append(SSTable.TEMPFILE_MARKER).append(separator);
+        if (!LEGACY_VERSION.equals(version))
+            buff.append(version).append(separator);
+        buff.append(generation);
+        return buff.toString();
 	}
 
 }

@@ -1,0 +1,167 @@
+package org.apache.cassandra.db;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.cassandra.cache.AutoSavingCache;
+import org.apache.cassandra.cache.RowCacheKey;
+import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.config.Schema;
+import org.apache.cassandra.db.filter.QueryFilter;
+import org.apache.cassandra.db.filter.QueryPath;
+import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.io.sstable.Component;
+import org.apache.cassandra.io.sstable.Descriptor;
+import org.apache.cassandra.io.sstable.SSTable;
+import org.apache.cassandra.service.CacheService;
+import org.apache.cassandra.service.StorageService;
+import org.apache.cassandra.utils.DefaultInteger;
+import org.apache.cassandra.utils.EstimatedHistogram;
+import org.apache.cassandra.utils.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Iterables;
+
+public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
+
+	private static Logger logger=LoggerFactory.getLogger(ColumnFamilyStore.class);
+	
+    // counts of sstables accessed by reads
+    private final EstimatedHistogram recentSSTablesPerRead = new EstimatedHistogram(35);
+    private final EstimatedHistogram sstablesPerRead = new EstimatedHistogram(35);
+	
+	static{
+		 // (can block if flush queue fills up, so don't put on scheduledTasks)
+		StorageService.optionalTasks.scheduleWithFixedDelay(new MeteredFlusher(), 1000, 1000, TimeUnit.MILLISECONDS);
+	}
+
+	private Table table;
+	private String columnFamily;
+	private CFMetaData metadata;
+
+	private DefaultInteger minCompactionThreshold;
+
+	private DefaultInteger maxCompactionThreshold;
+
+	private IPartitioner partitioner;
+	
+	public void initRowCache() {
+		long start=System.currentTimeMillis();
+		AutoSavingCache<RowCacheKey,ColumnFamily> rowCache=CacheService.instance.rowCache;
+		
+		int cacheRowRead=0;
+		for(DecoratedKey key:rowCache.readSaved(table.name,columnFamily)){
+			cacheRow(metadata.cfId,key);
+		}
+		
+        if (cacheRowRead > 0)
+            logger.info(String.format("completed loading (%d ms; %d keys) row cache for %s.%s",
+                        System.currentTimeMillis() - start,
+                        cacheRowRead,
+                        table.name,
+                        columnFamily));
+	
+	}
+	
+	private ColumnFamily cacheRow(Integer cfId, DecoratedKey decoratedKey) {
+		RowCacheKey key=new RowCacheKey(cfId,decoratedKey);
+		ColumnFamily cached;
+		if((cached=CacheService.instance.rowCache.get(key))==null){
+			cached =getTopLevelColumns(QueryFilter.getIdentityFilter(decoratedKey, new QueryPath(columnFamily)),
+					Integer.MIN_VALUE,
+					true);
+			if(cached==null)
+				return null;
+			CacheService.instance.rowCache.put(key, cached);
+		}
+		return cached;
+	}
+
+	private ColumnFamily getTopLevelColumns(QueryFilter filter,
+			int gcBefore, boolean forCache) {
+		CollationController controller=new CollationController(this,forCache,filter,gcBefore);
+		ColumnFamily columns=controller.getTopLevelColumns();
+		recentSSTablesPerRead.add(controller.getSstablesIterated());
+		sstablesPerRead.add(controller.getSstablesIterated());
+		return columns;
+	}
+
+	private ColumnFamilyStore(Table table,String columnFamilyName,IPartitioner partitioner,int generation,CFMetaData metadata){
+		assert metadata!=null: "null metadata for " + table + ":" + columnFamilyName;
+		this.table=table;
+		columnFamily=columnFamilyName;
+		this.metadata=metadata;
+		
+		this.minCompactionThreshold=new DefaultInteger(metadata.getMinCompactionThreshold());
+		this.maxCompactionThreshold=new DefaultInteger(metadata.getMaxCompactionThreshold());
+		
+		this.partitioner=partitioner;
+	}
+
+	public static ColumnFamilyStore createColumnFamilyStore(Table table,
+			String columnFamily) {
+		return createColumnFamilyStore(table, columnFamily, StorageService.getPartitioner(), Schema.instance.getCFMetaData(table.name, columnFamily));
+	}
+
+	private static synchronized ColumnFamilyStore createColumnFamilyStore(Table table,
+			String columnFamily, IPartitioner partitioner,
+			CFMetaData metadata) {
+		// get the max generation number, to prevent generation conflicts
+		List<Integer> generations=new ArrayList<Integer>();
+		
+		for(String path:DatabaseDescriptor.getAllDataFileLocationsForTable(table.name)){
+			Iterable<Pair<Descriptor,Component>> pairs=files(new File(path),columnFamily);
+			File incrementalsPath=new File(path,"backups");
+			if(incrementalsPath.exists()){
+				pairs=Iterables.concat(pairs,files(incrementalsPath,columnFamily));
+			}
+			for(Pair<Descriptor,Component> pair:pairs){
+				Descriptor desc=pair.left;
+				if(!desc.cfname.equals(columnFamily)){
+					continue;
+				}
+				generations.add(desc.generation);
+				if(!desc.isCompatible()){
+					throw new RuntimeException(String.format("Can't open incompatible SSTable! Current version %s, found file: %s",
+                            Descriptor.CURRENT_VERSION, desc));
+				}
+			}
+		}
+		Collections.sort(generations);
+		
+		int value = (generations.size() > 0) ? (generations.get(generations.size() - 1)) : 0;
+
+        return new ColumnFamilyStore(table, columnFamily, partitioner, value, metadata);
+	}
+
+	//ColumnFamily = table ,every SSTABLE has the key= Descriptor value=Component.
+	private static Iterable<Pair<Descriptor, Component>> files(File path,
+			String columnFamilyName) {
+		final List<Pair<Descriptor,Component>> sstables=new ArrayList<Pair<Descriptor,Component>>();
+		final String sstableFilePrefix=columnFamilyName+Component.separator;
+		//NB:we never "accept" a file in the FilenameFilter sense : they are added to the sstable  map;
+		path.listFiles(new FileFilter(){
+			
+			public boolean accept(File file){
+				 // we are only interested in the SSTable files that belong to the specific ColumnFamily
+				if(file.isDirectory()||!file.getName().startsWith(sstableFilePrefix))
+					return false;
+				
+				Pair<Descriptor,Component> pair=SSTable.tryComponentFromFilename(file.getParentFile(),file.getName());
+				
+				if(pair!=null)
+					sstables.add(pair);
+				
+				return false;
+			}
+		});
+		return sstables;
+	}
+
+}

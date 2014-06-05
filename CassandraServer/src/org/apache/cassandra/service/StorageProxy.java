@@ -3,6 +3,7 @@ package org.apache.cassandra.service;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,10 +16,12 @@ import javax.management.ObjectName;
 import org.apache.cassandra.concurrent.Stage;
 import org.apache.cassandra.concurrent.StageManager;
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.db.CounterMutation;
 import org.apache.cassandra.db.IMutation;
 import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.Row;
 import org.apache.cassandra.db.RowMutation;
+import org.apache.cassandra.locator.IEndpointSnitch;
 import org.apache.cassandra.net.MessageProducer;
 import org.apache.cassandra.net.MessagingService;
 import org.apache.cassandra.service.StorageService.Verb;
@@ -35,6 +38,7 @@ public class StorageProxy implements StorageProxyMBean {
 			.getLogger(StorageProxy.class);
 
 	private static final LatencyTracker readStats = new LatencyTracker();
+	private static final LatencyTracker writeStates=new LatencyTracker();
 	
 	public static final StorageProxy instance = new StorageProxy();
 
@@ -346,6 +350,69 @@ public class StorageProxy implements StorageProxyMBean {
 		}
 		
 		abstract protected void runMayThrow() throws Exception;
+	}
+
+	public static void mutate(List<? extends IMutation> mutations,
+			ConsistencyLevel consistency_level) throws UnavailableException {
+		 logger.debug("Mutations/ConsistencyLevel are {}/{}", mutations, consistency_level);
+		 final String localDataCenter=DatabaseDescriptor.getEndpointSnitch().getDatacenter(FBUtilities.getBroadcastAddress());
+		 
+		 long startTime=System.nanoTime();
+		 List<IWriteResponseHandler> responseHandlers=new ArrayList<IWriteResponseHandler>();
+		 
+		 IMutation mostRecentMutation=null;
+		 try{
+			 for(IMutation mutation:mutations){
+				 mostRecentMutation=mutation;
+				 if(mutation instanceof CounterMutation){
+					 responseHandlers.add(mutateCounter((CounterMutation)mutation,localDataCenter));
+				 }else{
+					 responseHandlers.add(performWrite(mutation,consistency_level,localDataCenter,standardWritePerformer));
+				 }
+			 }
+			 for(IWriteResponseHandler responseHandler:responseHandlers){
+				 responseHandler.get();
+			 }
+		 }catch(TimeoutException ex){
+			 
+		 }catch(IOException e){
+			 
+		 }finally{
+			 writeStates.addNano(System.nanoTime()-startTime);
+		 }
+	}
+
+	private static IWriteResponseHandler performWrite(IMutation mutation,
+			ConsistencyLevel consistency_level, String localDataCenter,
+			WritePerformer standardwriteperformer2) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private static IWriteResponseHandler mutateCounter(
+			CounterMutation mutation, String localDataCenter) throws UnavailableException {
+		InetAddress endpoint=findSuitableEndpoint(mutation.getTable(),mutation.key(),localDataCenter);
+	}
+
+	private static InetAddress findSuitableEndpoint(String table,
+			ByteBuffer key, String localDataCenter) throws UnavailableException {
+		IEndpointSnitch snitch=DatabaseDescriptor.getEndpointSnitch();
+		List<InetAddress> endpoints=StorageService.instance.getLiveNaturalEndpoints(table, key);
+		if(endpoints.isEmpty()){
+			throw new UnavailableException();
+		}
+		List<InetAddress> localEndpoints=new ArrayList<InetAddress>();
+		for(InetAddress endpoint:endpoints){
+			if(snitch.getDatacenter(endpoint).equals(localDataCenter)){
+				localEndpoints.add(endpoint);
+			}
+		}
+		if(localEndpoints.isEmpty()){
+			snitch.sortByProximity(FBUtilities.getBroadcastAddress(), endpoints);
+			return endpoints.get(0);
+		}else{
+			return localEndpoints.get(FBUtilities.threadLocalRandom().nextInt(localEndpoints.size()));
+		}
 	}
 	
 }

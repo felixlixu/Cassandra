@@ -14,8 +14,8 @@ public class Component {
 	
 	final static EnumSet<Type> TYPES=EnumSet.allOf(Type.class);
 	enum Type{
-		DATA("Data.db");
-		
+		DATA("Data.db"),
+		COMPACTED_MARKER("Compacted");
 		final String repr;
 		Type(String repr){
 			this.repr=repr;
@@ -31,6 +31,8 @@ public class Component {
 
 	public final static Component DATA = new Component(Type.DATA, -1);
 
+	public static final Component COMPACTED_MARKER = new Component(Type.COMPACTED_MARKER, -1);;
+
 	private Type type;
 
 	private int id;
@@ -43,6 +45,10 @@ public class Component {
 		this.hashCode=Objects.hashCode(type,id);
 	}
 
+	/**
+	 * Filename of the form "ksname/cfname-tmp- version-gen-component
+	 * name is ksname
+	 * */
 	public static Pair<Descriptor, Component> fromFilename(File dir, String name) {
 		Pair<Descriptor,String> path=Descriptor.fromFilename(dir,name);
 		Type type=Type.fromRepreentation(path.right);
@@ -55,6 +61,10 @@ public class Component {
 		
 		return new Pair<Descriptor,Component>(path.left,component);
 		
+	}
+
+	public String name() {
+		return type.repr;
 	}
 
 }

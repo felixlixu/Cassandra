@@ -1,0 +1,15 @@
+package org.apache.cassandra.db.index;
+
+import org.apache.cassandra.db.ColumnFamilyStore;
+
+public class SecondaryIndexManager {
+
+	private ColumnFamilyStore baseCfs;
+
+	public SecondaryIndexManager(ColumnFamilyStore baseCfs) {
+		indexesByColumn=new ConcurrentSkipListMap<ByteBuffer,SecondaryIndex>();
+		rowLevelIndexMap=new HashMap<Class<? extends SecondaryIndex>,SecondaryIndex>();
+		this.baseCfs=baseCfs;
+	}
+
+}

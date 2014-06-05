@@ -1,0 +1,20 @@
+package org.apache.cassandra.db;
+
+import java.util.concurrent.atomic.AtomicReference;
+
+public class DataTracker {
+
+	private ColumnFamilyStore cfStore;
+	private AtomicReference<View> view;
+
+	public DataTracker(ColumnFamilyStore cfstore) {
+		this.cfStore=cfstore;
+		this.view=new AtomicReference<View>();
+		this.init();
+	}
+	
+	static class View{
+		
+	}
+
+}

@@ -17,4 +17,6 @@ public interface IEndpointSnitch {
 			List<InetAddress> endpoints);
 
 	int compareEndpoints(InetAddress target,InetAddress a1,InetAddress a2);
+
+	String getDatacenter(InetAddress endpoint);
 }

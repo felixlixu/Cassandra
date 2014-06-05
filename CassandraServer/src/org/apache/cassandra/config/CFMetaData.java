@@ -171,5 +171,8 @@ public final class CFMetaData {
 	public AbstractType getDefaultValidator() {
 		return defaultValidator;
 	}
+	public boolean getReplicateOnWrite() {
+		return replicateOnWrite;
+	}
 
 }

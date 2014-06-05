@@ -44,9 +44,11 @@ public class Table {
 	
 	private Table(String table) {
 		name=table;
+		//get keyspace metadata
 		KSMetaData ksm=Schema.instance.getKSMetaData(table);
 		assert ksm!=null:"Unknown keyspace "+table;
 		try{
+			// create 
 			createReplicationStrategy(ksm);
 		}catch(ConfigurationException e){
 			throw new RuntimeException(e);
@@ -76,6 +78,7 @@ public class Table {
 		}
 	}
 
+	//cfId is column family Id cfName equal column family name.
 	public void initCf(Integer cfId, String cfName) {
 		assert !columnFamilyStores.containsKey(cfId) : String.format("tried to init %s as %s, but already used by %s",
                 cfName, cfId, columnFamilyStores.get(cfId));

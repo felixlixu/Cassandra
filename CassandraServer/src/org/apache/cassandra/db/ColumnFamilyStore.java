@@ -4,8 +4,13 @@ import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.cassandra.cache.AutoSavingCache;
 import org.apache.cassandra.cache.RowCacheKey;
@@ -14,10 +19,12 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.filter.QueryFilter;
 import org.apache.cassandra.db.filter.QueryPath;
+import org.apache.cassandra.db.index.SecondaryIndexManager;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.io.sstable.Component;
 import org.apache.cassandra.io.sstable.Descriptor;
 import org.apache.cassandra.io.sstable.SSTable;
+import org.apache.cassandra.io.sstable.SSTableReader;
 import org.apache.cassandra.service.CacheService;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.utils.DefaultInteger;
@@ -43,13 +50,18 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
 
 	private Table table;
 	private String columnFamily;
-	private CFMetaData metadata;
+	public final CFMetaData metadata;
 
 	private DefaultInteger minCompactionThreshold;
 
 	private DefaultInteger maxCompactionThreshold;
+	
+	private AtomicInteger fileIndexGenerator=new AtomicInteger(0);
 
 	private IPartitioner partitioner;
+	private final DataTracker data;
+
+	private SecondaryIndexManager indexManager;
 	
 	public void initRowCache() {
 		long start=System.currentTimeMillis();
@@ -102,6 +114,37 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
 		this.maxCompactionThreshold=new DefaultInteger(metadata.getMaxCompactionThreshold());
 		
 		this.partitioner=partitioner;
+		this.indexManager=new SecondaryIndexManager(this);
+		fileIndexGenerator.set(generation);
+		
+		if(logger.isDebugEnabled())
+			logger.debug("Starting CFS {}",columnFamily);
+		
+		data=new DataTracker(this);
+		Set<DecoratedKey> savedKeys=CacheService.instance.keyCache.readSaved(table.name, columnFamily);
+		Set<Map.Entry<Descriptor, Set<Component>>> entries=files(table.name,columnFamilyName,false,false).entrySet();
+	
+		data.addInitialSSTables(SSTableReader.batchOpen(entries,savedKeys,data, metadata, this.partitioner));
+	}
+
+	private Map files(String keyspace, String columnFamily, boolean includeCompacted, boolean includeTemporary) {
+		final Map<Descriptor,Set<Component>> sstables=new HashMap<Descriptor,Set<Component>>();
+		for(String directory:DatabaseDescriptor.getAllDataFileLocationsForTable(keyspace)){
+			for(Pair<Descriptor,Component> component:files(new File(directory),columnFamily)){
+				if(component!=null){
+					if((includeCompacted || !new File(component.left.filenameFor(Component.COMPACTED_MARKER)).exists())
+		                     && (includeTemporary || !component.left.temporary)){
+						Set<Component> components=sstables.get(component.left);
+						if(components==null){
+							components=new HashSet<Component>();
+							sstables.put(component.left, components);
+						}
+						components.add(component.right);
+					}
+				}
+			}
+		}
+		return sstables;
 	}
 
 	public static ColumnFamilyStore createColumnFamilyStore(Table table,
@@ -112,7 +155,9 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
 	private static synchronized ColumnFamilyStore createColumnFamilyStore(Table table,
 			String columnFamily, IPartitioner partitioner,
 			CFMetaData metadata) {
+		// get the max generation number, to prevent generation conflicts
 		List<Integer> generations=new ArrayList<Integer>();
+		
 		for(String path:DatabaseDescriptor.getAllDataFileLocationsForTable(table.name)){
 			Iterable<Pair<Descriptor,Component>> pairs=files(new File(path),columnFamily);
 			File incrementalsPath=new File(path,"backups");
@@ -133,20 +178,25 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
 		}
 		Collections.sort(generations);
 		
+		// get max version. 
 		int value = (generations.size() > 0) ? (generations.get(generations.size() - 1)) : 0;
-
+		
         return new ColumnFamilyStore(table, columnFamily, partitioner, value, metadata);
 	}
 
-	//ColumnFamily = table every SSTABLE has the key= Descriptor value=Component.
+	//ColumnFamily = table ,every SSTABLE has the key= Descriptor value=Component.
 	private static Iterable<Pair<Descriptor, Component>> files(File path,
 			String columnFamilyName) {
 		final List<Pair<Descriptor,Component>> sstables=new ArrayList<Pair<Descriptor,Component>>();
 		final String sstableFilePrefix=columnFamilyName+Component.separator;
+		//NB:we never "accept" a file in the FilenameFilter sense : they are added to the sstable  map;
 		path.listFiles(new FileFilter(){
+			
 			public boolean accept(File file){
+				 // we are only interested in the SSTable files that belong to the specific ColumnFamily
 				if(file.isDirectory()||!file.getName().startsWith(sstableFilePrefix))
 					return false;
+				
 				Pair<Descriptor,Component> pair=SSTable.tryComponentFromFilename(file.getParentFile(),file.getName());
 				
 				if(pair!=null)

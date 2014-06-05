@@ -1,0 +1,414 @@
+package org.apache.cassandra.thrift;
+
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
+
+import org.apache.cassandra.auth.Permission;
+import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.db.ColumnFamily;
+import org.apache.cassandra.db.ColumnFamilyStore;
+import org.apache.cassandra.db.DecoratedKey;
+import org.apache.cassandra.db.ReadCommand;
+import org.apache.cassandra.db.Row;
+import org.apache.cassandra.db.SliceByNamesReadCommand;
+import org.apache.cassandra.db.Table;
+import org.apache.cassandra.db.filter.QueryPath;
+import org.apache.cassandra.scheduler.IRequestScheduler;
+import org.apache.cassandra.service.ClientState;
+import org.apache.cassandra.service.SocketSessionManagementService;
+import org.apache.cassandra.service.StorageProxy;
+import org.apache.cassandra.service.StorageService;
+import org.apache.thrift.TException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class CassandraServer implements Cassandra.Iface {
+
+	private static Logger logger=LoggerFactory.getLogger(CassandraServer.class);
+	
+	private final IRequestScheduler requestScheduler;
+	private final static List<ColumnOrSuperColumn> EMPTY_COLUMNS=Collections.emptyList();
+	
+	//Every clientState is hold a copy.
+	public final ThreadLocal<ClientState> clientState=new ThreadLocal<ClientState>(){
+		@Override
+		public ClientState initialValue(){
+			return new ClientState();
+		}
+	};
+	
+	public CassandraServer(){
+		requestScheduler=DatabaseDescriptor.getRequestScheduler();
+	}
+	
+	//get clientState,Because of SocketSessionManagementService managered ClientState use HashMap, we can new clientstate
+	// and didn't need ThreadLocal.
+	public ClientState state(){
+		SocketAddress remoteSocket=SocketSessionManagementService.remoteSocket.get();
+		ClientState retval=null;
+		if(null!=remoteSocket){
+			retval=SocketSessionManagementService.instance.get(remoteSocket);
+			if(null==retval){
+				retval=new ClientState();
+				SocketSessionManagementService.instance.put(remoteSocket,retval);
+			}
+		}
+		else{
+			retval=clientState.get();
+		}
+		return retval;
+	}
+	
+	@Override
+	public void login(AuthenticationRequest auth_request)
+			throws AuthenticationException, AuthorizationException, TException {
+		state().login(auth_request.getCredentials());
+	}
+
+	@Override 
+	//Keyspace like database,every user has only one keyspace.
+	public void set_keyspace(String keyspace) throws InvalidRequestException,
+			TException {
+		ThriftValidation.validateTable(keyspace);
+		state().setKeyspace(keyspace);
+	}
+
+	@Override
+	//ColumnPath has three property:ColumnFamily/SuperColumn/Column
+	public ColumnOrSuperColumn get(ByteBuffer key, ColumnPath column_path,
+			ConsistencyLevel consistency_level) throws InvalidRequestException,
+			NotFoundException, UnavailableException, TimedOutException,
+			TException {
+		logger.debug("get");
+		return internal_get(key,column_path,consistency_level);
+	}
+
+	private ColumnOrSuperColumn internal_get(ByteBuffer key,
+			ColumnPath column_path, ConsistencyLevel consistency_level) throws InvalidRequestException, NotFoundException, TimedOutException, UnavailableException {
+		
+		//return Permission All.The system can get permission from config file. It permission is a set<>
+		state().hasColumnFamilyAccess(column_path.column_family,Permission.READ);
+		String keyspace=state().getKeyspace();  //every user has one keyspace.
+		
+		//Schema has a map to storage keyspace and KSMetadata; keySapce is the key,and KSMetadata use a map to store cfMetadata.
+		CFMetaData metadata=ThriftValidation.validateColumnFamily(keyspace, column_path.column_family);
+		
+		ThriftValidation.validateColumnPath(metadata, column_path);
+		ThriftValidation.validateConsistencyLevel(keyspace, consistency_level,RequestType.READ);
+		
+		QueryPath path=new QueryPath(column_path.column_family,column_path.column==null?null:column_path.super_column);
+		List<ByteBuffer> nameAsList=Arrays.asList(column_path.column==null?column_path.super_column:column_path.column);
+		ThriftValidation.validateKey(metadata,key);
+		ReadCommand command=new SliceByNamesReadCommand(keyspace,key,path,nameAsList);
+		
+		Map<DecoratedKey,ColumnFamily> cfamilies=readColumnFamily(Arrays.asList(command),consistency_level);
+		ColumnFamily cf=cfamilies.get(StorageService.getPartitioner().decorateKey(command.key));
+		
+		if(cf==null){
+			throw new NotFoundException();
+		}
+		List<ColumnOrSuperColumn> tcolumns=thriftifyColumnFamily(cf,command.queryPath.superColumnName!=null,false);
+		if(tcolumns.isEmpty()){
+			throw new NotFoundException();
+		}
+		assert tcolumns.size()==1;
+		return tcolumns.get(0);
+	}
+
+	private List<ColumnOrSuperColumn> thriftifyColumnFamily(ColumnFamily cf,
+			boolean subcolumnsOnly, boolean reverseOrder) {
+		if(cf==null||cf.isEmpty()){
+			return EMPTY_COLUMNS;
+		}
+		return null;
+	}
+
+	protected Map<DecoratedKey, ColumnFamily> readColumnFamily(
+			List<ReadCommand> commands, ConsistencyLevel consistency_level) throws TimedOutException, UnavailableException {
+		Map<DecoratedKey,ColumnFamily> columnFamilyKeyMap=new HashMap<DecoratedKey,ColumnFamily>();
+		List<Row> rows;
+		try{
+			schedule(DatabaseDescriptor.getRpcTimeout());
+			try{
+				rows=StorageProxy.read(commands,consistency_level);
+			}
+			finally{
+				release();
+			}
+		}catch(TimeoutException e){
+            logger.debug("... timed out");
+        	throw new TimedOutException();			
+		}
+		
+		for(Row row:rows){
+			columnFamilyKeyMap.put(row.key, row.cf);
+		}
+		return columnFamilyKeyMap;
+	}
+
+	
+	private void release() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	/**
+	 * Schedule the current thread for access to the required services.
+	 * */
+	private void schedule(long timeoutMS) throws TimeoutException {
+		requestScheduler.queue(Thread.currentThread(),state().getShcedulingValue(),timeoutMS);
+	}
+
+	@Override
+	public List<ColumnOrSuperColumn> get_slice(ByteBuffer key,
+			ColumnParent column_parent, SlicePredicate predicate,
+			ConsistencyLevel consistency_level) throws InvalidRequestException,
+			UnavailableException, TimedOutException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int get_count(ByteBuffer key, ColumnParent column_parent,
+			SlicePredicate predicate, ConsistencyLevel consistency_level)
+			throws InvalidRequestException, UnavailableException,
+			TimedOutException, TException {
+		logger.debug("get_count");
+		
+		state().hasColumnFamilyAccess(column_parent.column_family, Permission.READ);
+		Table table=Table.open(state().getKeyspace());
+		ColumnFamilyStore cfs=table.getColumnFamilyStore(column_parent.column_family);
+		
+		return 0;
+	}
+
+	@Override
+	public Map<ByteBuffer, List<ColumnOrSuperColumn>> multiget_slice(
+			List<ByteBuffer> keys, ColumnParent column_parent,
+			SlicePredicate predicate, ConsistencyLevel consistency_level)
+			throws InvalidRequestException, UnavailableException,
+			TimedOutException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Map<ByteBuffer, Integer> multiget_count(List<ByteBuffer> keys,
+			ColumnParent column_parent, SlicePredicate predicate,
+			ConsistencyLevel consistency_level) throws InvalidRequestException,
+			UnavailableException, TimedOutException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<KeySlice> get_range_slices(ColumnParent column_parent,
+			SlicePredicate predicate, KeyRange range,
+			ConsistencyLevel consistency_level) throws InvalidRequestException,
+			UnavailableException, TimedOutException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<KeySlice> get_indexed_slices(ColumnParent column_parent,
+			IndexClause index_clause, SlicePredicate column_predicate,
+			ConsistencyLevel consistency_level) throws InvalidRequestException,
+			UnavailableException, TimedOutException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void insert(ByteBuffer key, ColumnParent column_parent,
+			Column column, ConsistencyLevel consistency_level)
+			throws InvalidRequestException, UnavailableException,
+			TimedOutException, TException {
+		
+	}
+
+	@Override
+	public void add(ByteBuffer key, ColumnParent column_parent,
+			CounterColumn column, ConsistencyLevel consistency_level)
+			throws InvalidRequestException, UnavailableException,
+			TimedOutException, TException {
+		logger.debug("add");
+		state().hasColumnFamilyAccess(column_parent.column_family, Permission.WRITE);
+		String keyspace=state().getKeyspace();
+		
+		CFMetaData metadata=ThriftValidation.validateColumnFamily(keyspace, column_parent.column_family,true);
+		ThriftValidation.validateKey(metadata, column_parent);
+	}
+
+	@Override
+	public void remove(ByteBuffer key, ColumnPath column_path, long timestamp,
+			ConsistencyLevel consistency_level) throws InvalidRequestException,
+			UnavailableException, TimedOutException, TException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void remove_counter(ByteBuffer key, ColumnPath path,
+			ConsistencyLevel consistency_level) throws InvalidRequestException,
+			UnavailableException, TimedOutException, TException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void batch_mutate(
+			Map<ByteBuffer, Map<String, List<Mutation>>> mutation_map,
+			ConsistencyLevel consistency_level) throws InvalidRequestException,
+			UnavailableException, TimedOutException, TException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void truncate(String cfname) throws InvalidRequestException,
+			UnavailableException, TimedOutException, TException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Map<String, List<String>> describe_schema_versions()
+			throws InvalidRequestException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<KsDef> describe_keyspaces() throws InvalidRequestException,
+			TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String describe_cluster_name() throws TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String describe_version() throws TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<TokenRange> describe_ring(String keyspace)
+			throws InvalidRequestException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String describe_partitioner() throws TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String describe_snitch() throws TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public KsDef describe_keyspace(String keyspace) throws NotFoundException,
+			InvalidRequestException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<String> describe_splits(String cfName, String start_token,
+			String end_token, int keys_per_split)
+			throws InvalidRequestException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String system_add_column_family(CfDef cf_def)
+			throws InvalidRequestException, SchemaDisagreementException,
+			TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String system_drop_column_family(String column_family)
+			throws InvalidRequestException, SchemaDisagreementException,
+			TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String system_add_keyspace(KsDef ks_def)
+			throws InvalidRequestException, SchemaDisagreementException,
+			TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String system_drop_keyspace(String keyspace)
+			throws InvalidRequestException, SchemaDisagreementException,
+			TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String system_update_keyspace(KsDef ks_def)
+			throws InvalidRequestException, SchemaDisagreementException,
+			TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String system_update_column_family(CfDef cf_def)
+			throws InvalidRequestException, SchemaDisagreementException,
+			TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public CqlResult execute_cql_query(ByteBuffer query, Compression compression)
+			throws InvalidRequestException, UnavailableException,
+			TimedOutException, SchemaDisagreementException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public CqlPreparedResult prepare_cql_query(ByteBuffer query,
+			Compression compression) throws InvalidRequestException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public CqlResult execute_prepared_cql_query(int itemId, List<String> values)
+			throws InvalidRequestException, UnavailableException,
+			TimedOutException, SchemaDisagreementException, TException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

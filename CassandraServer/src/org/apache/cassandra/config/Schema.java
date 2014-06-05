@@ -103,4 +103,8 @@ public class Schema {
 	public KSMetaData getTableDefinition(String table) {
 		return getKSMetaData(table);
 	}
+
+	public Integer getId(String ksName, String cfName) {
+		return cfIdMap.get(new Pair<String,String>(ksName,cfName));
+	}
 }
