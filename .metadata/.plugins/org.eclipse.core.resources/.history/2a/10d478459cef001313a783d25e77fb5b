@@ -1,0 +1,20 @@
+package org.apache.cassandra.io.sstable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class SSTableMetadata {
+
+	private static Logger logger = LoggerFactory.getLogger(SSTableMetadata.class);
+	
+	public static final SSTableMetadataSerializer serializer=new SSTableMetadataSerializer();
+
+	public static SSTableMetadata createDefaultInstance() {
+		return new SSTableMetadata();
+	}
+
+	public final String partitioner;
+
+}
+
+

@@ -15,7 +15,10 @@ public class Component {
 	final static EnumSet<Type> TYPES=EnumSet.allOf(Type.class);
 	enum Type{
 		DATA("Data.db"),
-		COMPACTED_MARKER("Compacted");
+		PRIMARY_INDEX("Index.db"),
+		COMPACTED_MARKER("Compacted"),
+		COMPRESSION_INFO("CompressionInfo.db"),
+		STATS("Statistics.db");
 		final String repr;
 		Type(String repr){
 			this.repr=repr;
@@ -31,9 +34,15 @@ public class Component {
 
 	public final static Component DATA = new Component(Type.DATA, -1);
 
-	public static final Component COMPACTED_MARKER = new Component(Type.COMPACTED_MARKER, -1);;
+	public static final Component COMPACTED_MARKER = new Component(Type.COMPACTED_MARKER, -1);
 
-	private Type type;
+	public static final Component PRIMARY_INDEX = new Component(Type.PRIMARY_INDEX,-1);
+
+	public static final Component STATS = new Component(Type.STATS,-1);
+
+	public static final Component COMPRESSION_INFO=new Component(Type.COMPRESSION_INFO,-1);
+
+	public final Type type;
 
 	private int id;
 

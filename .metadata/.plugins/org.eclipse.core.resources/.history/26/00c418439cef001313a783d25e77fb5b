@@ -1,0 +1,13 @@
+package org.apache.cassandra.db.commitlog;
+
+public class ReplayPosition implements Comparable<ReplayPosition> {
+
+	public static final ReplayPosition NONE=new ReplayPosition(-1,0);
+
+	@Override
+	public int compareTo(ReplayPosition arg0) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+}

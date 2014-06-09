@@ -94,7 +94,7 @@ public class Descriptor {
 		return filenameFor(component.name());
 	}
 
-	private String filenameFor(String suffix) {
+	public String filenameFor(String suffix) {
 		return baseFilename()+separator+suffix;
 	}
 

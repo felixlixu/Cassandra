@@ -1,0 +1,7 @@
+package org.apache.cassandra.db.commitlog;
+
+public class ReplayPosition {
+
+	public static final ReplayPosition NONE=new ReplayPosition(-1,0);
+
+}

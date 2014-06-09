@@ -1,7 +1,12 @@
 package org.apache.cassandra.io.sstable;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
+import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +17,33 @@ import org.slf4j.LoggerFactory;
 public abstract class SSTable {
 
 	public static final Logger logger=LoggerFactory.getLogger(SSTable.class);
-	public static final Object TEMPFILE_MARKER="tmp";
+	public static final String TEMPFILE_MARKER="tmp";
+	public static final String COMPONENT_DATA=Component.Type.DATA.repr;
+	public static final String COMPONENT_STATS=Component.Type.STATS.repr;
+	private final Descriptor descriptor;
+	private final boolean compression;
+	private final CFMetaData metadata;
+	private final IPartitioner partitioner;
+	private Set<Component> components;
+	
+
+	public SSTable(Descriptor descriptor, Set<Component> components,
+			CFMetaData metadata, IPartitioner partitioner) {
+		assert descriptor!=null;
+		assert components!=null;
+		assert partitioner !=null;
+		
+		this.descriptor=descriptor;
+		Set<Component> dataComponents=new HashSet<Component>(components);
+		for(Component component:components){
+			assert component.type!=Component.Type.COMPACTED_MARKER;
+		}
+		this.compression=dataComponents.contains(Component.COMPRESSION_INFO);
+		this.components=Collections.unmodifiableSet(dataComponents);
+		this.metadata=metadata;
+		this.partitioner=partitioner;
+	}
+
 
 	public static Pair<Descriptor, Component> tryComponentFromFilename(
 			File dir, String name) {

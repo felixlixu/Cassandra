@@ -1,0 +1,43 @@
+package org.apache.cassandra.io.sstable;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.db.DataTracker;
+import org.apache.cassandra.db.DecoratedKey;
+import org.apache.cassandra.dht.IPartitioner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * SSTableReaders are open()ed by Table.onStart; after that they are created by SSTableWriter.renameAndOpen
+ *  Do not re-call open() on existing SSTable files; use the references kept by ColumnFamilyStore post-start instead.
+ **/
+public class SSTableReader {
+	 private static final Logger logger = LoggerFactory.getLogger(SSTableReader.class);
+
+	public static Collection<SSTableReader> batchOpen(
+			Set<Entry<Descriptor, Set<Component>>> entries,
+			Set<DecoratedKey> savedKeys, DataTracker tracker, CFMetaData metadata,
+			IPartitioner partitioner) {
+		final Collection<SSTableReader> stables=new LinkedBlockingQueue<SSTableReader>();
+		for(final Map.Entry<Descriptor, Set<Component>> entry:entries){
+			Runnable runnable=new Runnable(){
+				public void run(){
+					SSTableReader sstable;
+					try{
+						
+					}catch(IOException ex){
+						logger.error("Corrupt sstable " + entry + "; skipped", ex);
+						return;
+					}
+				}
+			}
+		}
+	}
+
+}

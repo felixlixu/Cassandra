@@ -1,0 +1,67 @@
+package org.apache.cassandra.io.sstable;
+
+import org.apache.cassandra.db.commitlog.ReplayPosition;
+import org.apache.cassandra.utils.EstimatedHistogram;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class SSTableMetadata {
+
+	private static Logger logger = LoggerFactory.getLogger(SSTableMetadata.class);
+	
+	public static final SSTableMetadataSerializer serializer=new SSTableMetadataSerializer();
+
+	public static SSTableMetadata createDefaultInstance() {
+		return new SSTableMetadata();
+	}
+
+	private final EstimatedHistogram estimatedRowSize;
+
+	private final EstimatedHistogram estimatedColumnCount;
+
+	private final ReplayPosition replayPosition;
+
+	private final long maxTimestamp;
+
+	private final double compressionRatio;
+
+	private final String positioner;
+	
+	private SSTableMetadata(){
+		this(defaultRowSizeHistogram(),
+			 defaultColumnCountHistogram(),
+			 ReplayPosition.NONE,
+			 Long.MIN_VALUE,
+			 Double.MIN_VALUE,
+			 null);
+	}
+
+
+	public SSTableMetadata(EstimatedHistogram rowSizes,
+			EstimatedHistogram columnCount,
+			ReplayPosition none, long minValue, double minValue2, Object object) {
+		this.estimatedRowSize=rowSizes;
+		this.estimatedColumnCount=columnCount;
+		this.replayPosition=replayPosition;
+		this.maxTimestamp=maxTimestamp;
+		this.compressionRatio=cr;
+		this.positioner=partitioner;
+	}
+
+
+	private static EstimatedHistogram defaultColumnCountHistogram() {
+		
+		return new EstimatedHistogram(114);
+	}
+
+	private static EstimatedHistogram defaultRowSizeHistogram() {
+		
+		return new EstimatedHistogram(150);
+	}
+
+	public final String partitioner;
+
+	
+}
+
+
