@@ -22,7 +22,7 @@ public class SSTableMetadata {
     public final double compressionRatio;
     public final String partitioner;
 	
-	private SSTableMetadata(){
+	public SSTableMetadata(){
 		this(defaultRowSizeHistogram(),
 			 defaultColumnCountHistogram(),
 			 ReplayPosition.NONE,

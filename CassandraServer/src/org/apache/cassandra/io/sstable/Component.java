@@ -8,6 +8,11 @@ import org.apache.cassandra.utils.Pair;
 
 import com.google.common.base.Objects;
 
+/***
+ * SSTables are made up of multiple components in separate files. 
+ * Components are identified by a type and an id,but required unique components (such as the data and Index file)
+ * may have implicit ids assigned to them. 
+ **/
 public class Component {
 
 	public static final char separator='-';
@@ -48,6 +53,10 @@ public class Component {
 
 	private int hashCode;
 	
+	public Component(Type type){
+		this(type,-1);
+	}
+	
 	public Component(Type type, int id) {
 		this.type=type;
 		this.id=id;
@@ -63,7 +72,11 @@ public class Component {
 		Type type=Type.fromRepreentation(path.right);
 		Component component;
 		switch(type){
-			case DATA: component=Component.DATA; break;
+			case				 DATA: component=Component.DATA; 				break;
+			case 	PRIMARY_INDEX	 : component=Component.PRIMARY_INDEX;		break;
+			case	COMPACTED_MARKER : component=Component.COMPACTED_MARKER;	break;
+			case 	COMPRESSION_INFO : component=Component.COMPRESSION_INFO;	break;
+			case             STATS   : component=Component.STATS;				break;
 			default:
 				throw new IllegalStateException();
 		}
@@ -76,4 +89,23 @@ public class Component {
 		return type.repr;
 	}
 
+	@Override
+	public String toString(){
+		return this.name();
+	}
+	
+	@Override
+	public boolean equals(Object o){
+		if(o==this)
+			return true;
+		if(!(o instanceof Component))
+			return false;
+		Component that=(Component)o;
+		return this.type==that.type&&this.id==that.id;
+	}
+	
+	@Override
+	public int hashCode(){
+		return hashCode;
+	}
 }

@@ -1,12 +1,19 @@
 package org.apache.cassandra.db.commitlog;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
+import org.apache.cassandra.io.ISerializer;
+
 public class ReplayPosition implements Comparable<ReplayPosition> {
 
 	public static final ReplayPosition NONE=new ReplayPosition(-1,0);
-	private final int segment;
+	public static final ReplayPositionSerializer serializer=new ReplayPositionSerializer();
+	private final long segment;
 	private final int position;
 
-	public ReplayPosition(int segment, int position) {
+	public ReplayPosition(long segment, int position) {
 		this.segment=segment;
 		assert position>=0;
 		this.position=position;
@@ -17,5 +24,24 @@ public class ReplayPosition implements Comparable<ReplayPosition> {
 		// TODO Auto-generated method stub
 		return 0;
 	}
+	
+    public static class ReplayPositionSerializer implements ISerializer<ReplayPosition>
+    {
+        public void serialize(ReplayPosition rp, DataOutput dos) throws IOException
+        {
+            dos.writeLong(rp.segment);
+            dos.writeInt(rp.position);
+        }
+
+        public ReplayPosition deserialize(DataInput dis) throws IOException
+        {
+            return new ReplayPosition(dis.readLong(), dis.readInt());
+        }
+
+        public long serializedSize(ReplayPosition object)
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
 
 }

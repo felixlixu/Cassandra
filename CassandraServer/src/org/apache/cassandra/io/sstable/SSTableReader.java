@@ -10,11 +10,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.cassandra.cache.AutoSavingCache;
+import org.apache.cassandra.cache.InstrumentingCache;
+import org.apache.cassandra.cache.KeyCacheKey;
 import org.apache.cassandra.concurrent.DebuggableThreadPoolExecutor;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.db.DataTracker;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.service.CacheService;
 import org.apache.cassandra.utils.Filter;
 import org.apache.cassandra.utils.SegmentedFile;
 import org.slf4j.Logger;
@@ -33,6 +37,7 @@ public class SSTableReader extends SSTable {
 	private IndexSummary indexSummary;
 	private Filter bf;
 	private SSTableDeletingTask deletingTask;
+	private InstrumentingCache<KeyCacheKey, Long> keyCache;
 
 	public SSTableReader(Descriptor descriptor, Set<Component> components,
 			CFMetaData metadata, IPartitioner partitioner, SegmentedFile ifile,
@@ -113,11 +118,49 @@ public class SSTableReader extends SSTable {
 												sstableMetadata);
 		
 		sstable.setTrackedBy(tracker);
+		
+		if(descriptor.hasStringInBloomFilter){
+			sstable.load(true,savedKeys);
+		}else{
+			sstable.load(false,savedKeys);
+			sstable.loadBloomFilter();
+		}
+        if (logger.isDebugEnabled())
+            logger.debug("INDEX LOAD TIME for " + descriptor + ": " + (System.currentTimeMillis() - start) + " ms.");
+
+        if (logger.isDebugEnabled() && sstable.getKeyCache() != null)
+            logger.debug(String.format("key cache contains %s/%s keys", sstable.getKeyCache().size(), sstable.getKeyCache().getCapacity()));
+
+        return sstable;
+	}
+
+	private void loadBloomFilter() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void load(boolean b, Set<DecoratedKey> savedKeys) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private InstrumentingCache<KeyCacheKey,Long> getKeyCache() {
+		return keyCache;
 	}
 
 	private void setTrackedBy(DataTracker tracker) {
-		// TODO Auto-generated method stub
-		
+		if(tracker!=null){
+			keyCache=CacheService.instance.keyCache;
+			deletingTask.setTracke(tracker);
+		}
+	}
+
+	public long bytesOnDisk() {
+		long bytes=0;
+		for(Component component:components){
+			bytes+=new File(descriptor.filenameFor(component)).length();
+		}
+		return bytes;
 	}
 
 }

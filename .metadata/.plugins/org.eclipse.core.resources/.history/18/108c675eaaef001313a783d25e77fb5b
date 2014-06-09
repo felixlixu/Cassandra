@@ -1,0 +1,44 @@
+package org.apache.cassandra.io.sstable;
+
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+
+import org.apache.cassandra.db.commitlog.ReplayPosition;
+import org.apache.cassandra.utils.EstimatedHistogram;
+import org.apache.cassandra.utils.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class SSTableMetadataSerializer {
+	
+	private static final Logger logger = LoggerFactory.getLogger(SSTableMetadataSerializer.class);
+
+	public SSTableMetadata deserialize(Descriptor descriptor) throws IOException {
+        logger.debug("Load metadata for {}", descriptor);
+        File statsFile = new File(descriptor.filenameFor(SSTable.COMPONENT_STATS));
+        if (!statsFile.exists())
+        {
+            logger.debug("No sstable stats for {}", descriptor);
+            return new SSTableMetadata();
+        }
+
+        DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(statsFile)));
+        try
+        {
+            return deserialize(dis, descriptor);
+        }
+        finally
+        {
+            FileUtils.closeQuietly(dis);
+        }
+	}
+	
+    public SSTableMetadata deserialize(DataInputStream dis, Descriptor desc) throws IOException
+    {
+    	return null;
+    }
+
+}

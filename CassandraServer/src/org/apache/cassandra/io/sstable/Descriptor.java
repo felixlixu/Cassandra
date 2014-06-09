@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.StringTokenizer;
 
 import org.apache.cassandra.db.Table;
+import org.apache.cassandra.db.commitlog.ReplayPosition;
 import org.apache.cassandra.utils.Pair;
 
 import com.google.common.base.Objects;
@@ -21,6 +22,11 @@ public class Descriptor {
 	public boolean temporary;
 	private int hashCode;
 	private Object directory;
+	public final boolean metadataIncludesReplayPosition;
+	public final boolean tracksMaxTimestamp;
+	public final boolean hasCompressionRatio;
+	public final boolean hasPartitioner;
+	public final boolean hasStringInBloomFilter;
 	public static final String LEGACY_VERSION="a";
 	public Descriptor(String version, File dir, String ksname, String cfname,
 			int generation, boolean temp) {
@@ -32,6 +38,12 @@ public class Descriptor {
 		this.generation=generation;
 		temporary=temp;
 		hashCode=Objects.hashCode(dir,generation,ksname,cfname);
+		
+		hasStringInBloomFilter = version.compareTo("c") < 0;
+		metadataIncludesReplayPosition=version.compareTo("g")>=0;
+		tracksMaxTimestamp = version.compareTo("h") >= 0;
+		hasCompressionRatio = version.compareTo("hb") >= 0;
+		hasPartitioner = version.compareTo("hc") >= 0;
 	}
 	
     /**

@@ -20,11 +20,11 @@ public abstract class SSTable {
 	public static final String TEMPFILE_MARKER="tmp";
 	public static final String COMPONENT_DATA=Component.Type.DATA.repr;
 	public static final String COMPONENT_STATS=Component.Type.STATS.repr;
-	private final Descriptor descriptor;
+	public final Descriptor descriptor;
 	private final boolean compression;
 	private final CFMetaData metadata;
 	private final IPartitioner partitioner;
-	private Set<Component> components;
+	public Set<Component> components;
 	
 
 	public SSTable(Descriptor descriptor, Set<Component> components,
