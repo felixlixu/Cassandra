@@ -8,6 +8,7 @@ import java.util.Set;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.utils.Pair;
+import org.apache.cassandra.utils.RandomAccessReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +22,7 @@ public abstract class SSTable {
 	public static final String COMPONENT_DATA=Component.Type.DATA.repr;
 	public static final String COMPONENT_STATS=Component.Type.STATS.repr;
 	public final Descriptor descriptor;
-	private final boolean compression;
+	protected final boolean compression;
 	private final CFMetaData metadata;
 	private final IPartitioner partitioner;
 	public Set<Component> components;
@@ -55,5 +56,11 @@ public abstract class SSTable {
                 logger.warn("Invalid file '{}' in data directory {}.", name, dir);
             return null;			
 		}
+	}
+
+
+	public static long estimateRowFromIndex(RandomAccessReader input) {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 }

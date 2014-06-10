@@ -21,6 +21,7 @@ public class Component {
 	enum Type{
 		DATA("Data.db"),
 		PRIMARY_INDEX("Index.db"),
+		FILTER("Filter.db"),
 		COMPACTED_MARKER("Compacted"),
 		COMPRESSION_INFO("CompressionInfo.db"),
 		STATS("Statistics.db");
@@ -46,6 +47,8 @@ public class Component {
 	public static final Component STATS = new Component(Type.STATS,-1);
 
 	public static final Component COMPRESSION_INFO=new Component(Type.COMPRESSION_INFO,-1);
+
+	public static final  Component FILTER=new Component(Type.FILTER,-1);
 
 	public final Type type;
 

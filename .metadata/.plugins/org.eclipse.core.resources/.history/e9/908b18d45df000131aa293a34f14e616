@@ -1,0 +1,21 @@
+package org.apache.cassandra.utils.obs;
+
+public class OpenBitSet {
+
+	private int wlen; // number of words (elements) used in the array
+	  public OpenBitSet(long numBits) 
+	  {
+	      wlen = bits2words(numBits);
+	      int lastPageSize = wlen % PAGE_SIZE;
+	      int fullPageCount = wlen / PAGE_SIZE;
+	      pageCount = fullPageCount + (lastPageSize == 0 ? 0 : 1);
+
+	      bits = new long[pageCount][];
+
+	      for (int i = 0; i < fullPageCount; ++i)
+	          bits[i] = new long[PAGE_SIZE];
+
+	      if (lastPageSize != 0)
+	          bits[bits.length - 1] = new long[lastPageSize];
+	  }
+}

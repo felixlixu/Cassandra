@@ -109,4 +109,11 @@ public class EstimatedHistogram {
             throw new UnsupportedOperationException();
         }
     }
+
+	public long count() {
+	       long sum = 0L;
+	       for (int i = 0; i < buckets.length(); i++) 
+	           sum += buckets.get(i);
+	       return sum;
+	}
 }

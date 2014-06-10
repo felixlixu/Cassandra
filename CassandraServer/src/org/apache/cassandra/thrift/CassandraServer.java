@@ -268,7 +268,7 @@ public class CassandraServer implements Cassandra.Iface {
 	}
 
 	private void doInsert(ConsistencyLevel consistency_level,
-			List<? extends IMutation> mutations) throws InvalidRequestException, TimedOutException {
+			List<? extends IMutation> mutations) throws InvalidRequestException, TimedOutException, UnavailableException {
 		ThriftValidation.validateConsistencyLevel(state().getKeyspace(), consistency_level, RequestType.WRITE);
         if (mutations.isEmpty())
             return;

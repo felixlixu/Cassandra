@@ -6,4 +6,7 @@
 <typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.service{AbstractRowResolver.java[AbstractRowResolver" modifiers="1025" timestamp="1399960305500"/>
 <typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.net{IAsyncCallback.java[IAsyncCallback" modifiers="513" timestamp="1399510445868"/>
 <typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.auth{IAuthenticator.java[IAuthenticator" modifiers="513" timestamp="1398058915353"/>
+<typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.io{ISerializer.java[ISerializer" modifiers="513" timestamp="1399181129367"/>
+<typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.utils{Filter.java[Filter" modifiers="1025" timestamp="1402378208538"/>
+<typeInfo handle="=CassandraServer/src&lt;org.apache.cassandra.utils{SegmentedFile.java[SegmentedFile" modifiers="1" timestamp="1402382517365"/>
 </typeInfoHistroy>

@@ -11,6 +11,7 @@ import org.apache.cassandra.auth.AllowAllAuthority;
 import org.apache.cassandra.auth.IAuthenticator;
 import org.apache.cassandra.auth.IAuthority;
 import org.apache.cassandra.cache.IRowCacheProvider;
+import org.apache.cassandra.config.Config.DiskAccessMode;
 import org.apache.cassandra.config.Config.RequestSchedulerId;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.locator.DynamicEndpointSnitch;
@@ -53,6 +54,8 @@ public class DatabaseDescriptor {
 	private static IAuthority authority=new AllowAllAuthority();
 
 	private static IRowCacheProvider rowCacheProvider;
+
+	private static DiskAccessMode indexAccessMode;
 
 	static {
 		try {
@@ -314,5 +317,13 @@ public class DatabaseDescriptor {
 			tableLocations[i]=conf.data_file_directories[i]+File.separator+table;
 		}
 		return tableLocations;
+	}
+
+	public static Config.DiskAccessMode getIndexAccessMode() {
+		return indexAccessMode;
+	}
+
+	public static DiskAccessMode getDiskAccessMode() {
+		return conf.disk_access_mode;
 	}
 }

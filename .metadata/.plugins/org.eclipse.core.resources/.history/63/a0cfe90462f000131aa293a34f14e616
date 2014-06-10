@@ -1,0 +1,17 @@
+package org.apache.cassandra.io.sstable;
+
+import org.apache.cassandra.utils.Filter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class LagacyBloomFilter extends Filter {
+
+    private static final int EXCESS = 20;
+    private static final Logger logger = LoggerFactory.getLogger(LegacyBloomFilter.class);
+    static LegacyBloomFilterSerializer serializer_ = new LegacyBloomFilterSerializer();
+
+    public static LegacyBloomFilterSerializer serializer()
+    {
+        return serializer_;
+    }
+}

@@ -1,0 +1,17 @@
+package org.apache.cassandra.utils;
+
+import org.apache.cassandra.utils.obs.OpenBitSet;
+
+public class BloomFilter extends Filter {
+
+	private static int EXCESS=20;
+
+	public static Filter emptyFilter() {
+		return new BloomFilter(0,bucketsFor(0,0));
+	}
+	
+	private static OpenBitSet bucketsFor(long numElements,int bucketsPer){
+		return new OpenBitSet(numElements*bucketsPer+EXCESS);
+	}
+
+}

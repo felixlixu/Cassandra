@@ -1,0 +1,24 @@
+package org.apache.cassandra.utils;
+
+import java.util.BitSet;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class LegacyBloomFilter extends Filter {
+
+    private static final int EXCESS = 20;
+    private static final Logger logger = LoggerFactory.getLogger(LegacyBloomFilter.class);
+    static LegacyBloomFilterSerializer serializer_ = new LegacyBloomFilterSerializer();
+	private BitSet fileter_;
+
+    public LegacyBloomFilter(int hashes, BitSet bs) {
+		hashCount=hashes;
+		fileter_=bs;
+	}
+
+	public static LegacyBloomFilterSerializer serializer()
+    {
+        return serializer_;
+    }
+}

@@ -1,6 +1,9 @@
 package org.apache.cassandra.io.sstable;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -15,11 +18,16 @@ import org.apache.cassandra.cache.InstrumentingCache;
 import org.apache.cassandra.cache.KeyCacheKey;
 import org.apache.cassandra.concurrent.DebuggableThreadPoolExecutor;
 import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.DataTracker;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.service.CacheService;
+import org.apache.cassandra.utils.BloomFilter;
+import org.apache.cassandra.utils.FileUtils;
 import org.apache.cassandra.utils.Filter;
+import org.apache.cassandra.utils.LegacyBloomFilter;
+import org.apache.cassandra.utils.RandomAccessReader;
 import org.apache.cassandra.utils.SegmentedFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,13 +142,44 @@ public class SSTableReader extends SSTable {
         return sstable;
 	}
 
-	private void loadBloomFilter() {
-		// TODO Auto-generated method stub
-		
+	private void loadBloomFilter() throws IOException {
+		if(!components.contains(Component.FILTER)){
+			bf=BloomFilter.emptyFilter();
+			return;
+		}
+		DataInputStream stream=null;
+		try{
+			stream=new DataInputStream(new BufferedInputStream(new FileInputStream(descriptor.filenameFor(Component.FILTER))));
+			if(descriptor.usesOldBloomFilter){
+				bf=LegacyBloomFilter.serializer().deserialize(stream);
+			}else{
+				bf=BloomFilter.serializer().deserialize(stream);
+			}
+		}
+		finally{
+			FileUtils.closeQuietly(stream);
+		}
 	}
 
-	private void load(boolean b, Set<DecoratedKey> savedKeys) {
-		// TODO Auto-generated method stub
+	private void load(boolean recreatebloom, Set<DecoratedKey> keysToLoadInCache) throws IOException {
+		boolean cacheLoading=keyCache!=null&&!keysToLoadInCache.isEmpty();
+		
+		SegmentedFile.Builder ibuilder=SegmentedFile.getBuilder(DatabaseDescriptor.getIndexAccessMode());
+		SegmentedFile.Builder dbuilder=compression
+									?SegmentedFile.getCompressedBuilder()
+									:SegmentedFile.getBuilder(DatabaseDescriptor.getDiskAccessMode());
+									
+		RandomAccessReader input=RandomAccessReader.open(new File(descriptor.filenameFor(Component.PRIMARY_INDEX)),true);
+		DecoratedKey left=null,right=null;
+		try{
+			long indexSize=input.length();
+			long histogramCount=sstableMetadata.estimatedRowSize.count();
+			long estimatedKeys=histogramCount>0&&!sstableMetadata.estimatedRowSize.isOverflowed()
+							?histogramCount
+							:SSTable.estimateRowFromIndex(input);
+		}finally{
+			FileUtils.closeQuietly(input);
+		}
 		
 	}
 

@@ -1,0 +1,29 @@
+package org.apache.cassandra.utils;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
+import org.apache.cassandra.io.ISerializer;
+
+public class BloomFilterSerializer implements ISerializer<BloomFilter> {
+
+	@Override
+	public void serialize(BloomFilter t, DataOutput dos) throws IOException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public BloomFilter deserialize(DataInput dis) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public long serializedSize(BloomFilter t) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+}

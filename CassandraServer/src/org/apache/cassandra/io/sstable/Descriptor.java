@@ -27,6 +27,7 @@ public class Descriptor {
 	public final boolean hasCompressionRatio;
 	public final boolean hasPartitioner;
 	public final boolean hasStringInBloomFilter;
+	public final boolean usesOldBloomFilter;
 	public static final String LEGACY_VERSION="a";
 	public Descriptor(String version, File dir, String ksname, String cfname,
 			int generation, boolean temp) {
@@ -39,6 +40,7 @@ public class Descriptor {
 		temporary=temp;
 		hashCode=Objects.hashCode(dir,generation,ksname,cfname);
 		
+		usesOldBloomFilter = version.compareTo("f") < 0;
 		hasStringInBloomFilter = version.compareTo("c") < 0;
 		metadataIncludesReplayPosition=version.compareTo("g")>=0;
 		tracksMaxTimestamp = version.compareTo("h") >= 0;

@@ -1,6 +1,15 @@
 package org.apache.cassandra.config;
 
+import org.apache.cassandra.config.Config.DiskAccessMode;
+
 public class Config {
+
+	public enum DiskAccessMode {
+		auto,
+		mmap,
+		mmap_index_only,
+		standard,
+	}
 
 	public String commitlog_directory;
 
@@ -45,6 +54,8 @@ public class Config {
 	public int key_cache_size_in_mb=0;
 
 	public int key_cache_to_save;
+
+	public DiskAccessMode disk_access_mode;
 	
 	public static enum RequestSchedulerId{
 		keyspace
