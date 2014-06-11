@@ -326,4 +326,8 @@ public class DatabaseDescriptor {
 	public static DiskAccessMode getDiskAccessMode() {
 		return conf.disk_access_mode;
 	}
+
+	public static Integer getIndexInterval() {
+		return conf.index_interval;
+	}
 }

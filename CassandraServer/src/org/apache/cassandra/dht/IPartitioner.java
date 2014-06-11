@@ -30,4 +30,6 @@ public interface IPartitioner<T extends Token> {
 	
 	public <T extends RingPosition> T minValue(Class<T> klass);
 
+	public DecoratedKey converFromDiskFormat(ByteBuffer key);
+
 }

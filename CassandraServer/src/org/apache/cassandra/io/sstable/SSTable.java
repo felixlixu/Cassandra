@@ -1,12 +1,15 @@
 package org.apache.cassandra.io.sstable;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.utils.ByteBufferUtil;
+import org.apache.cassandra.utils.FileUtils;
 import org.apache.cassandra.utils.Pair;
 import org.apache.cassandra.utils.RandomAccessReader;
 import org.slf4j.Logger;
@@ -24,7 +27,7 @@ public abstract class SSTable {
 	public final Descriptor descriptor;
 	protected final boolean compression;
 	private final CFMetaData metadata;
-	private final IPartitioner partitioner;
+	protected final IPartitioner partitioner;
 	public Set<Component> components;
 	
 
@@ -59,8 +62,17 @@ public abstract class SSTable {
 	}
 
 
-	public static long estimateRowFromIndex(RandomAccessReader input) {
-		// TODO Auto-generated method stub
-		return 0;
+	public static long estimateRowFromIndex(RandomAccessReader input) throws IOException {
+		final int SAMPLES_CAP=1000,BYTES_CAP=(int)Math.min(10000000, input.length());
+		int keys=0;
+		while(input.getFilePointer()<BYTES_CAP&&keys<SAMPLES_CAP){
+			ByteBufferUtil.skipShortLength(input);
+			FileUtils.skipBytesFully(input, 8);
+			keys++;
+		}
+        assert keys > 0 && input.getFilePointer() > 0 && input.length() > 0 : "Unexpected empty index file: " + input;
+        long estimatedRows = input.length() / (input.getFilePointer() / keys);
+        input.seek(0);
+		return estimatedRows;
 	}
 }

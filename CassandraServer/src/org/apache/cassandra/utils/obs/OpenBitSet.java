@@ -1,5 +1,29 @@
 package org.apache.cassandra.utils.obs;
 
+import java.util.Arrays;
+
+/**
+ * An "open" BitSet implementation that allows direct access to the arrays of
+ * words storing the bits. Derived from Lucene's OpenBitSet, but with a paged
+ * backing array (see bits delaration, below).
+ * <p/>
+ * Unlike java.util.bitset, the fact that bits are packed into an array of longs
+ * is part of the interface. This allows efficient implementation of other
+ * algorithms by someone other than the author. It also allows one to
+ * efficiently implement alternate serialization or interchange formats.
+ * <p/>
+ * <code>OpenBitSet</code> is faster than <code>java.util.BitSet</code> in most
+ * operations and *much* faster at calculating cardinality of sets and results
+ * of set operations. It can also handle sets of larger cardinality (up to 64 *
+ * 2**32-1)
+ * <p/>
+ * The goals of <code>OpenBitSet</code> are the fastest implementation possible,
+ * and maximum code reuse. Extra safety and encapsulation may always be built on
+ * top, but if that's built in, the cost can never be removed (and hence people
+ * re-implement their own version in order to get better performance). If you
+ * want a "safe", totally encapsulated (and slower and limited) BitSet class,
+ * use <code>java.util.BitSet</code>.
+ * */
 public class OpenBitSet {
 
 	private int wlen; // number of words (elements) used in the array
@@ -41,5 +65,68 @@ public class OpenBitSet {
 
 	public long[] getPage(int p) {
 		return bits[p];
+	}
+
+	public long size() {
+		return capacity();
+	}
+
+	public long capacity() {
+		return ((long) wlen) << 6;
+	}
+
+	public void clear(long startIndex, long endIndex) {
+		if (endIndex <= startIndex)
+			return;
+
+		int startWord = (int) (startIndex >> 6);
+		if (startWord >= wlen)
+			return;
+
+		// since endIndex is one past the end, this is index of the last
+		// word to be changed.
+		int endWord = (int) ((endIndex - 1) >> 6);
+
+		long startmask = -1L << startIndex;
+		long endmask = -1L >>> -endIndex; // 64-(endIndex&0x3f) is the same as
+											// -endIndex due to wrap
+
+		// invert masks since we are clearing
+		startmask = ~startmask;
+		endmask = ~endmask;
+
+		if (startWord == endWord) {
+			bits[startWord / PAGE_SIZE][startWord % PAGE_SIZE] &= (startmask | endmask);
+			return;
+		}
+
+		bits[startWord / PAGE_SIZE][startWord % PAGE_SIZE] &= startmask;
+
+		int middle = Math.min(wlen, endWord);
+		if (startWord / PAGE_SIZE == middle / PAGE_SIZE) {
+			Arrays.fill(bits[startWord / PAGE_SIZE], (startWord + 1)
+					% PAGE_SIZE, middle % PAGE_SIZE, 0L);
+		} else {
+			while (++startWord < middle)
+				bits[startWord / PAGE_SIZE][startWord % PAGE_SIZE] = 0L;
+		}
+		if (endWord < wlen) {
+			bits[endWord / PAGE_SIZE][endWord % PAGE_SIZE] &= endmask;
+		}
+	}
+
+	public boolean get(long index) {
+		int i = (int) (index >> 6); // div 64
+		int bit = (int) index & 0x3f; // mod 64
+		long bitmask = 1L << bit;
+		// TODO perfectionist one can implement this using bit operations
+		return (bits[i / PAGE_SIZE][i % PAGE_SIZE] & bitmask) != 0;
+	}
+
+	public void set(long index) {
+	    int wordNum = (int)(index >> 6);
+	    int bit = (int)index & 0x3f;
+	    long bitmask = 1L << bit;
+	    bits[ wordNum / PAGE_SIZE ][ wordNum % PAGE_SIZE ] |= bitmask;
 	}
 }

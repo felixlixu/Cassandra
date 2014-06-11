@@ -5,6 +5,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -24,6 +25,7 @@ import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.service.CacheService;
 import org.apache.cassandra.utils.BloomFilter;
+import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FileUtils;
 import org.apache.cassandra.utils.Filter;
 import org.apache.cassandra.utils.LegacyBloomFilter;
@@ -177,10 +179,51 @@ public class SSTableReader extends SSTable {
 			long estimatedKeys=histogramCount>0&&!sstableMetadata.estimatedRowSize.isOverflowed()
 							?histogramCount
 							:SSTable.estimateRowFromIndex(input);
+			indexSummary=new IndexSummary(estimatedKeys);
+			if(recreatebloom)
+				bf=LegacyBloomFilter.getFilter(estimatedKeys,15);
+			while(true){
+				long indexPosition=input.getFilePointer();
+				if(indexPosition==indexSize)
+					break;
+				ByteBuffer key=null,skippedKey;
+				skippedKey=ByteBufferUtil.readWithLength(input);
+				
+				boolean shouldAddEntry=indexSummary.shouldAddEntry();
+				if(shouldAddEntry||cacheLoading||recreatebloom){
+					key=skippedKey;
+				}
+				
+				if(null==left)
+					left=decodeKey(partitioner,descriptor,skippedKey);
+				right=decodeKey(partitioner,descriptor,skippedKey);
+				
+				long dataPosition=input.readLong();
+				if(key!=null){
+					DecoratedKey decoratedKey=decodeKey(partitioner,descriptor,key);
+					if(recreatebloom)
+						bf.add(decoratedKey.key);
+					if(shouldAddEntry)
+						indexSummary.addEntry(decoratedKey,indexPosition);
+					if(cacheLoading&&keysToLoadInCache.contains(decoratedKey))
+						cacheKey(decoratedKey,dataPosition);
+				}
+				indexSummary.incrementRowid();
+				ibuilder.addPotentialBoundary(indexPosition);
+				dbuilder.addPotentialBoundary(dataPosition);
+			}
+			indexSummary.complete();
 		}finally{
 			FileUtils.closeQuietly(input);
 		}
 		
+	}
+
+	private DecoratedKey decodeKey(IPartitioner partitioner,
+			Descriptor descriptor, ByteBuffer key) {
+		if(descriptor.hasEncodedKeys)
+			return partitioner.converFromDiskFormat(key);
+		return partitioner.decorateKey(key);
 	}
 
 	private InstrumentingCache<KeyCacheKey,Long> getKeyCache() {

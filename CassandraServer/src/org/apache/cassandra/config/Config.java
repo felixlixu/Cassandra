@@ -56,6 +56,8 @@ public class Config {
 	public int key_cache_to_save;
 
 	public DiskAccessMode disk_access_mode;
+
+	public Integer index_interval;
 	
 	public static enum RequestSchedulerId{
 		keyspace

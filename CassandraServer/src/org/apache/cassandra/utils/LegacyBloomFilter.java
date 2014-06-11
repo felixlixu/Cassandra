@@ -21,4 +21,20 @@ public class LegacyBloomFilter extends Filter {
     {
         return serializer_;
     }
+
+	public static Filter getFilter(long numElements, int targetBucketsPerElem) {
+		int maxBucketsPerElement=Math.max(1,BloomCalculations.maxBucketsPerElement(numElements));
+		int bucketsPerElement=Math.min(targetBucketsPerElem, maxBucketsPerElement);
+		if(bucketsPerElement<targetBucketsPerElem){
+			 logger.warn(String.format("Cannot provide an optimal LegacyBloomFilter for %d elements (%d/%d buckets per element).",
+                     numElements, bucketsPerElement, targetBucketsPerElem));
+		}
+		BloomCalculations.BloomSpecification spec=BloomCalculations.computeBloomSpec(bucketsPerElement);
+		return new LegacyBloomFilter(spec.K,bucketsFor(numElements,spec.bucketsPerElement));
+	}
+
+	private static BitSet bucketsFor(long numElements, int bucketsPer) {
+		long numBits=numElements*bucketsPer+EXCESS;
+		return new BitSet((int)Math.min(Integer.MAX_VALUE, numBits));
+	}
 }

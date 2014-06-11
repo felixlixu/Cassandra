@@ -116,4 +116,8 @@ public class EstimatedHistogram {
 	           sum += buckets.get(i);
 	       return sum;
 	}
+
+	public boolean isOverflowed() {
+		return buckets.get(buckets.length()-1)>0;
+	}
 }
