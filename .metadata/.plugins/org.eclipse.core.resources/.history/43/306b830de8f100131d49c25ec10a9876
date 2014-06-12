@@ -1,0 +1,23 @@
+package org.apache.cassandra.io.compress;
+
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+
+public class CompressionMetadata {
+
+	public final long dataLength;
+	public final long compressedFileLength;
+	private final String indexFilePath;
+	
+	public CompressionMetadata(String indexFilePath,long compressedLength) throws IOException{
+		this.indexFilePath=indexFilePath;
+		
+		DataInputStream stream=new DataInputStream(new FileInputStream(indexFilePath));
+		String compressorName=stream.readUTF();
+		
+		
+		this.compressedFileLength=compressedLength;
+	}
+
+}

@@ -7,11 +7,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.db.DecoratedKey;
+import org.apache.cassandra.db.RowPosition;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.io.utils.FileUtils;
+import org.apache.cassandra.io.utils.RandomAccessReader;
 import org.apache.cassandra.utils.ByteBufferUtil;
-import org.apache.cassandra.utils.FileUtils;
+import org.apache.cassandra.utils.HeapAllocator;
 import org.apache.cassandra.utils.Pair;
-import org.apache.cassandra.utils.RandomAccessReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,5 +77,12 @@ public abstract class SSTable {
         long estimatedRows = input.length() / (input.getFilePointer() / keys);
         input.seek(0);
 		return estimatedRows;
+	}
+
+
+	public static DecoratedKey<?> getMinimalKey(DecoratedKey<?> key) {
+		return key.key.position()>0||key.key.hasRemaining()
+				? new DecoratedKey(key.token,HeapAllocator.instance.clone(key.key))
+				:key;
 	}
 }

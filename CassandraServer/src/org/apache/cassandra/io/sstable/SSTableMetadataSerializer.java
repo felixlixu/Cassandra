@@ -8,8 +8,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import org.apache.cassandra.db.commitlog.ReplayPosition;
+import org.apache.cassandra.io.utils.FileUtils;
 import org.apache.cassandra.utils.EstimatedHistogram;
-import org.apache.cassandra.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

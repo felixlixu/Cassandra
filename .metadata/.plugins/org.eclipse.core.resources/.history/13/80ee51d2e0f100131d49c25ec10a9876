@@ -1,0 +1,14 @@
+package org.apache.cassandra.utils;
+
+public class MmappedSegmentedFile extends SegmentedFile {
+
+	static class Builder extends SegmentedFile.Builder{
+
+		@Override
+		public void addPotentialBoundary(long boundary) {
+			// TODO Auto-generated method stub
+			
+		}
+		
+	}
+}

@@ -1,5 +1,6 @@
 package org.apache.cassandra.utils;
 
+import java.nio.ByteBuffer;
 import java.util.BitSet;
 
 import org.slf4j.Logger;
@@ -36,5 +37,11 @@ public class LegacyBloomFilter extends Filter {
 	private static BitSet bucketsFor(long numElements, int bucketsPer) {
 		long numBits=numElements*bucketsPer+EXCESS;
 		return new BitSet((int)Math.min(Integer.MAX_VALUE, numBits));
+	}
+
+	@Override
+	public void add(ByteBuffer key) {
+		// TODO Auto-generated method stub
+		
 	}
 }

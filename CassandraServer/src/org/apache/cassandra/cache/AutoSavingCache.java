@@ -21,10 +21,10 @@ import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.db.compaction.CompactionInfo;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.OperationType;
+import org.apache.cassandra.io.utils.FileUtils;
 import org.apache.cassandra.service.CacheService;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.utils.ByteBufferUtil;
-import org.apache.cassandra.utils.FileUtils;
 import org.apache.cassandra.utils.Pair;
 import org.apache.cassandra.utils.SequentialWriter;
 import org.apache.cassandra.utils.WrappedRunnable;
@@ -86,9 +86,11 @@ public class AutoSavingCache<K extends CacheKey, V> extends
 				in = new DataInputStream(new BufferedInputStream(
 						new FileInputStream(path)));
 				while (in.available() > 0) {
+					// every DecoratedKey in file :size+detail.
 					int size = in.readInt();
 					byte[] bytes = new byte[size];
 					in.readFully(bytes);
+					//create new bytebuffer
 					ByteBuffer buffer = ByteBuffer.wrap(bytes);
 					DecoratedKey key;
 					try {

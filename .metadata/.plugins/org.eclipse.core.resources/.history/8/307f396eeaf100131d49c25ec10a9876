@@ -1,0 +1,54 @@
+package org.apache.cassandra.io.utils;
+
+import java.nio.MappedByteBuffer;
+
+import org.apache.cassandra.config.Config;
+import org.apache.cassandra.config.Config.DiskAccessMode;
+import org.apache.cassandra.io.utils.SegmentedFile.Builder;
+import org.apache.cassandra.utils.Pair;
+
+public class SegmentedFile {
+
+	public static abstract class Builder {
+
+		public abstract void addPotentialBoundary(long boundary);
+
+		public abstract SegmentedFile complete(String filenameFor);
+
+	}
+	
+	static final class Segment extends Pair<Long,MappedByteBuffer> implements Comparable<Segment>{
+
+		public Segment(Long left, MappedByteBuffer right) {
+			super(left, right);
+			// TODO Auto-generated constructor stub
+		}
+		
+	}
+
+	private String path;
+	private long length;
+	private long onDiskLength;
+
+	//// This differs from length for compressed files
+	public SegmentedFile(String path, long length) {
+		this(path,length,length);
+	}
+
+	public SegmentedFile(String path, long length, long onDiskLength) {
+		this.path=path;
+		this.length=length;
+		this.onDiskLength=onDiskLength;
+	}
+
+	public static Builder getBuilder(DiskAccessMode mode) {
+		return mode==Config.DiskAccessMode.mmap
+				?new MmappedSegmentedFile.Builder()
+				:new BufferedSegmentedFile.Builder();
+	}
+
+	public static Builder getCompressedBuilder() {
+		return new CompressedSegmentedFile.Builder();
+	}
+
+}

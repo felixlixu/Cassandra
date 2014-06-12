@@ -48,7 +48,7 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
 		StorageService.optionalTasks.scheduleWithFixedDelay(new MeteredFlusher(), 1000, 1000, TimeUnit.MILLISECONDS);
 	}
 
-	private Table table;
+	public Table table;
 	private String columnFamily;
 	public final CFMetaData metadata;
 
@@ -62,6 +62,8 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
 	private final DataTracker data;
 
 	private SecondaryIndexManager indexManager;
+
+	private volatile boolean valid=true;
 	
 	public void initRowCache() {
 		long start=System.currentTimeMillis();
@@ -207,5 +209,14 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean {
 		});
 		return sstables;
 	}
+
+	public boolean isValid() {
+		return valid;
+	}
+
+	public String getColumnFamilyName() {
+		return columnFamily;
+	}
+
 
 }

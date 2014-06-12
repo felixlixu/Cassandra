@@ -58,8 +58,8 @@ public class Descriptor {
      *
      * @return A Descriptor for the SSTable, and the Component remainder.
      */
-	public static Pair<Descriptor, String> fromFilename(File dir, String name) {
-		String ksname=extractKeyspaceName(dir);
+	public static Pair<Descriptor, String> fromFilename(File directory, String name) {
+		String ksname=extractKeyspaceName(directory);
 		StringTokenizer st=new StringTokenizer(name,String.valueOf(separator));
 		String nexttok;
 		
@@ -78,7 +78,7 @@ public class Descriptor {
 		int generation=Integer.parseInt(nexttok);
 		
 		String component=st.nextToken();
-		return new Pair<Descriptor,String>(new Descriptor(version, dir, ksname, cfname, generation, temporary),component);
+		return new Pair<Descriptor,String>(new Descriptor(version, directory, ksname, cfname, generation, temporary),component);
 	}
 	
 	static boolean versionValidate(String ver){
@@ -124,6 +124,12 @@ public class Descriptor {
             buff.append(version).append(separator);
         buff.append(generation);
         return buff.toString();
+	}
+
+	public static Descriptor fromFilename(String filename) {
+		File file=new File(filename);
+		assert file.getParentFile()!=null:"Filename must include parent directory";
+		return fromFilename(file.getParentFile(),file.getName()).left;
 	}
 
 }

@@ -1,0 +1,27 @@
+package org.apache.cassandra.io.utils;
+
+import org.apache.cassandra.config.Config;
+import org.apache.cassandra.config.Config.DiskAccessMode;
+import org.apache.cassandra.io.utils.SegmentedFile.Builder;
+
+public class SegmentedFile {
+
+	public static abstract class Builder {
+
+		public abstract void addPotentialBoundary(long boundary);
+
+		public abstract SegmentedFile complete(String filenameFor);
+
+	}
+
+	public static Builder getBuilder(DiskAccessMode mode) {
+		return mode==Config.DiskAccessMode.mmap
+				?new MmappedSegmentedFile.Builder()
+				:new BufferedSegmentedFile.Builder();
+	}
+
+	public static Builder getCompressedBuilder() {
+		return new CompressedSegmentedFile.Builder();
+	}
+
+}

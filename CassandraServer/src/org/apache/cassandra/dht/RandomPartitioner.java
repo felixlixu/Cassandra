@@ -101,4 +101,10 @@ public class RandomPartitioner extends AbstractPartitioner<BigIntegerToken> {
 		return ownerships;
 	}
 
+	@Override
+	public DecoratedKey converFromDiskFormat(ByteBuffer key) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

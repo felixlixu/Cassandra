@@ -1,15 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <qualifiedTypeNameHistroy>
-<fullyQualifiedTypeName name="org.apache.cassandra.concurrent.Stage"/>
-<fullyQualifiedTypeName name="org.apache.cassandra.service.StorageService.Verb"/>
-<fullyQualifiedTypeName name="java.util.EnumMap"/>
-<fullyQualifiedTypeName name="org.apache.log4j.Logger"/>
-<fullyQualifiedTypeName name="java.io.FileFilter"/>
-<fullyQualifiedTypeName name="java.util.EnumSet"/>
-<fullyQualifiedTypeName name="java.awt.Window.Type"/>
-<fullyQualifiedTypeName name="org.apache.cassandra.db.Table"/>
 <fullyQualifiedTypeName name="java.util.StringTokenizer"/>
-<fullyQualifiedTypeName name="org.apache.cassandra.io.sstable.Component"/>
 <fullyQualifiedTypeName name="com.google.common.base.Objects"/>
 <fullyQualifiedTypeName name="com.google.common.collect.Iterables"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.db.ColumnFamilyType"/>
@@ -39,7 +30,6 @@
 <fullyQualifiedTypeName name="java.util.Collections"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.service.CacheService"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.cache.InstrumentingCache"/>
-<fullyQualifiedTypeName name="java.io.FileInputStream"/>
 <fullyQualifiedTypeName name="java.io.BufferedInputStream"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.utils.obs.OpenBitSet"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.db.DBConstants"/>
@@ -48,16 +38,26 @@
 <fullyQualifiedTypeName name="java.io.DataOutput"/>
 <fullyQualifiedTypeName name="java.io.IOException"/>
 <fullyQualifiedTypeName name="java.io.ObjectInputStream"/>
-<fullyQualifiedTypeName name="java.io.DataInputStream"/>
 <fullyQualifiedTypeName name="java.util.BitSet"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.config.Config"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.config.Config.DiskAccessMode"/>
-<fullyQualifiedTypeName name="org.apache.cassandra.utils.SegmentedFile.Builder"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.utils.RandomAccessReader"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.utils.FileUtils"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.utils.BloomCalculations.BloomSpecification"/>
 <fullyQualifiedTypeName name="java.util.Arrays"/>
-<fullyQualifiedTypeName name="java.nio.ByteBuffer"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.config.DatabaseDescriptor"/>
 <fullyQualifiedTypeName name="org.apache.cassandra.utils.ByteBufferUtil"/>
+<fullyQualifiedTypeName name="org.apache.cassandra.db.RowPosition"/>
+<fullyQualifiedTypeName name="java.nio.ByteBuffer"/>
+<fullyQualifiedTypeName name="org.apache.cassandra.utils.SegmentedFile.Builder"/>
+<fullyQualifiedTypeName name="java.io.FileInputStream"/>
+<fullyQualifiedTypeName name="java.io.DataInputStream"/>
+<fullyQualifiedTypeName name="org.apache.cassandra.io.sstable.Descriptor"/>
+<fullyQualifiedTypeName name="org.apache.cassandra.io.sstable.Component"/>
+<fullyQualifiedTypeName name="java.io.IOError"/>
+<fullyQualifiedTypeName name="java.io.File"/>
+<fullyQualifiedTypeName name="java.util.List"/>
+<fullyQualifiedTypeName name="java.util.ArrayList"/>
+<fullyQualifiedTypeName name="org.apache.cassandra.utils.Pair"/>
+<fullyQualifiedTypeName name="java.nio.MappedByteBuffer"/>
 </qualifiedTypeNameHistroy>

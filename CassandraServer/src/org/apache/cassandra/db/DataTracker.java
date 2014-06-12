@@ -1,5 +1,6 @@
 package org.apache.cassandra.db;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -7,9 +8,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.cassandra.io.sstable.SSTableReader;
 import org.apache.cassandra.utils.IntervalTree.IntervalTree;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DataTracker {
 
+	private static final Logger logger = LoggerFactory.getLogger(DataTracker.class);
 	private ColumnFamilyStore cfStore;
 	private AtomicReference<View> view;
 
@@ -44,7 +48,45 @@ public class DataTracker {
 			this.compacting=compacting;
 			this.intervalTree=intervalTree;
 		}
+
+		public View replace(List<SSTableReader> oldSSTables,
+				Iterable<SSTableReader> replacements) {
+			// TODO Auto-generated method stub
+			return null;
+		}
 		
+	}
+
+	public void addInitialSSTables(Collection<SSTableReader> sstables) {
+		replace(Collections.<SSTableReader>emptyList(),sstables);
+	}
+
+	private void replace(List<SSTableReader> oldSSTables,
+			Iterable<SSTableReader> replacements) {
+		if(!cfStore.isValid()){
+			removeOldSSTablesSize(replacements);
+			replacements=Collections.emptyList();
+		}
+		View currentView,newView;
+		do{
+			currentView=view.get();
+			newView=currentView.replace(oldSSTables,replacements);
+		}while(!view.weakCompareAndSet(currentView, newView));
+		postReplace(oldSSTables,replacements);
+	}
+
+	private void postReplace(List<SSTableReader> oldSSTables,
+			Iterable<SSTableReader> replacements) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void removeOldSSTablesSize(Iterable<SSTableReader> oldSSTables) {
+		for(SSTableReader sstable:oldSSTables){
+            if (logger.isDebugEnabled())
+                logger.debug(String.format("removing %s from list of files tracked for %s.%s",
+                            sstable.descriptor, cfStore.table.name, cfStore.getColumnFamilyName()));
+		}
 	}
 
 }

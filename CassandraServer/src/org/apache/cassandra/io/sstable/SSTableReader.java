@@ -14,7 +14,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.cassandra.cache.AutoSavingCache;
 import org.apache.cassandra.cache.InstrumentingCache;
 import org.apache.cassandra.cache.KeyCacheKey;
 import org.apache.cassandra.concurrent.DebuggableThreadPoolExecutor;
@@ -23,14 +22,14 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.DataTracker;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.io.utils.FileUtils;
+import org.apache.cassandra.io.utils.RandomAccessReader;
+import org.apache.cassandra.io.utils.SegmentedFile;
 import org.apache.cassandra.service.CacheService;
 import org.apache.cassandra.utils.BloomFilter;
 import org.apache.cassandra.utils.ByteBufferUtil;
-import org.apache.cassandra.utils.FileUtils;
 import org.apache.cassandra.utils.Filter;
 import org.apache.cassandra.utils.LegacyBloomFilter;
-import org.apache.cassandra.utils.RandomAccessReader;
-import org.apache.cassandra.utils.SegmentedFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +38,7 @@ import org.slf4j.LoggerFactory;
  *  Do not re-call open() on existing SSTable files; use the references kept by ColumnFamilyStore post-start instead.
  **/
 public class SSTableReader extends SSTable {
-	 private static final Logger logger = LoggerFactory.getLogger(SSTableReader.class);
+	private static final Logger logger = LoggerFactory.getLogger(SSTableReader.class);
 	private SSTableMetadata sstableMetadata;
 	private long maxDataAge;
 	private SegmentedFile ifile;
@@ -48,6 +47,8 @@ public class SSTableReader extends SSTable {
 	private Filter bf;
 	private SSTableDeletingTask deletingTask;
 	private InstrumentingCache<KeyCacheKey, Long> keyCache;
+	private DecoratedKey first;
+	private DecoratedKey last;
 
 	public SSTableReader(Descriptor descriptor, Set<Component> components,
 			CFMetaData metadata, IPartitioner partitioner, SegmentedFile ifile,
@@ -187,6 +188,7 @@ public class SSTableReader extends SSTable {
 				if(indexPosition==indexSize)
 					break;
 				ByteBuffer key=null,skippedKey;
+				// int + key
 				skippedKey=ByteBufferUtil.readWithLength(input);
 				
 				boolean shouldAddEntry=indexSummary.shouldAddEntry();
@@ -216,7 +218,16 @@ public class SSTableReader extends SSTable {
 		}finally{
 			FileUtils.closeQuietly(input);
 		}
-		
+		this.first=getMinimalKey(left);
+		this.last=getMinimalKey(right);
+		ifile=ibuilder.complete(descriptor.filenameFor(Component.PRIMARY_INDEX));
+		dfile=ibuilder.complete(descriptor.filenameFor(Component.DATA));
+	}
+
+	private void cacheKey(DecoratedKey decoratedKey, long info) {
+		if(keyCache==null)
+			return;
+		keyCache.put(new KeyCacheKey(descriptor,ByteBufferUtil.clone(decoratedKey.key)), info);
 	}
 
 	private DecoratedKey decodeKey(IPartitioner partitioner,

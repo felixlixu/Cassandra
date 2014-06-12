@@ -1,0 +1,14 @@
+package org.apache.cassandra.io.compress;
+
+public class CompressionMetadata {
+
+	public final long dataLength;
+	public final long compressedFileLength;
+	private final String indexFilePath;
+	
+	public CompressionMetadata(String indexFilePath,long compressedLength){
+		this.indexFilePath=indexFilePath;
+		this.compressedFileLength=compressedLength;
+	}
+
+}

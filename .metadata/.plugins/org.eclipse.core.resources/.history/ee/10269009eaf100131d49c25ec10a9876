@@ -1,0 +1,33 @@
+package org.apache.cassandra.io.utils;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MmappedSegmentedFile extends SegmentedFile {
+
+	static class Builder extends SegmentedFile.Builder{
+
+		private final List<Long> boundaries;
+		
+		public Builder(){
+			super();
+			boundaries=new ArrayList<Long>();
+			boundaries.add(0L);
+		}
+		
+		@Override
+		public void addPotentialBoundary(long boundary) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public SegmentedFile complete(String path) {
+			long length=new File(path).length();
+			boundaries.add(Long.valueOf(length));
+			return new MmappedSegmentedFile(path,length,createSegments(path));
+		}
+		
+	}
+}

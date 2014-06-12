@@ -1,0 +1,26 @@
+package org.apache.cassandra.io.utils;
+
+import org.apache.cassandra.io.compress.CompressionMetadata;
+
+public class CompressedSegmentedFile extends SegmentedFile {
+
+	public CompressedSegmentedFile(String path, CompressionMetadata metadata) {
+		super(path, metadata.dataLength, metadata.compressedFileLength);
+		
+	}
+
+	static class Builder extends SegmentedFile.Builder{
+
+		@Override
+		public void addPotentialBoundary(long boundary) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public SegmentedFile complete(String path) {
+			 return new CompressedSegmentedFile(path, CompressionMetadata.create(path));
+		}
+		
+	}
+}

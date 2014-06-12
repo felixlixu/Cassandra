@@ -9,6 +9,9 @@ import java.nio.channels.ClosedChannelException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.apache.cassandra.io.utils.FileMark;
+import org.apache.cassandra.io.utils.RandomAccessReader;
+
 public class SequentialWriter extends OutputStream {
     // isDirty - true if this.buffer contains any un-synced bytes
     protected boolean isDirty = false, syncNeeded = false;

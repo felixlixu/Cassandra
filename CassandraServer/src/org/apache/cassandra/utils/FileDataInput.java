@@ -5,6 +5,8 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.apache.cassandra.io.utils.FileMark;
+
 public interface FileDataInput extends DataInput, Closeable {
     public String getPath();
 

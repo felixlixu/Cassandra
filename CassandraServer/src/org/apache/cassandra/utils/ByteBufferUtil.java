@@ -12,6 +12,7 @@ import java.util.Arrays;
 import static com.google.common.base.Charsets.UTF_8;
 
 import org.apache.cassandra.io.utils.FileDataInput;
+import org.apache.cassandra.io.utils.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 
 public class ByteBufferUtil
