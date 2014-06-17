@@ -58,6 +58,7 @@ public class CassandraServer implements Cassandra.Iface {
 	//get clientState,Because of SocketSessionManagementService managered ClientState use HashMap, we can new clientstate
 	// and didn't need ThreadLocal.
 	public ClientState state(){
+		//ThreadLocal 保持个线程的独立
 		SocketAddress remoteSocket=SocketSessionManagementService.remoteSocket.get();
 		ClientState retval=null;
 		if(null!=remoteSocket){
