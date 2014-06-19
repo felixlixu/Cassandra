@@ -21,12 +21,18 @@ import org.apache.cassandra.db.IMutation;
 import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.Row;
 import org.apache.cassandra.db.RowMutation;
+import org.apache.cassandra.db.Table;
+import org.apache.cassandra.dht.Token;
+import org.apache.cassandra.gms.Gossiper;
+import org.apache.cassandra.locator.AbstractReplicationStrategy;
 import org.apache.cassandra.locator.IEndpointSnitch;
+import org.apache.cassandra.net.Message;
 import org.apache.cassandra.net.MessageProducer;
 import org.apache.cassandra.net.MessagingService;
 import org.apache.cassandra.service.StorageService.Verb;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.thrift.UnavailableException;
+import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.LatencyTracker;
 import org.slf4j.Logger;
@@ -351,10 +357,15 @@ public class StorageProxy implements StorageProxyMBean {
 		
 		abstract protected void runMayThrow() throws Exception;
 	}
-
+	/**
+	 * Use this method to have these Mutations applied across all replicas.
+	 * This method will take care of possibility of a replica being down and hint the data across to some other replia.
+	 **/
 	public static void mutate(List<? extends IMutation> mutations,
 			ConsistencyLevel consistency_level) throws UnavailableException {
+		 
 		 logger.debug("Mutations/ConsistencyLevel are {}/{}", mutations, consistency_level);
+		 /** snitch is a strategy how to select network. */
 		 final String localDataCenter=DatabaseDescriptor.getEndpointSnitch().getDatacenter(FBUtilities.getBroadcastAddress());
 		 
 		 long startTime=System.nanoTime();
@@ -384,14 +395,48 @@ public class StorageProxy implements StorageProxyMBean {
 
 	private static IWriteResponseHandler performWrite(IMutation mutation,
 			ConsistencyLevel consistency_level, String localDataCenter,
-			WritePerformer standardwriteperformer2) {
-		// TODO Auto-generated method stub
-		return null;
+			WritePerformer performer) throws UnavailableException, IOException, TimeoutException {
+		String table=mutation.getTable();
+		AbstractReplicationStrategy rs=Table.open(table).getReplicationStrategy();
+		Collection<InetAddress> writeEndpoints=getWriteEndpoints(table,mutation.key());
+		
+		IWriteResponseHandler responseHandler=rs.getWriteResponseHandler(writeEndpoints,consistency_level);
+		
+		responseHandler.assureSufficientLiveNodes();
+		performer.apply(mutation,writeEndpoints,responseHandler,localDataCenter,consistency_level);
+		return responseHandler;
+	}
+
+	private static Collection<InetAddress> getWriteEndpoints(String table,
+			ByteBuffer key) {
+		StorageService ss=StorageService.instance;
+		Token tk=StorageService.getPartitioner().getToken(key);
+		List<InetAddress> naturalEndpoints=ss.getLiveNaturalEndpoints(table, tk);
+		return ss.getTokenMetadata().getWriteEndpoints(tk,table,naturalEndpoints);
 	}
 
 	private static IWriteResponseHandler mutateCounter(
-			CounterMutation mutation, String localDataCenter) throws UnavailableException {
+			CounterMutation mutation, String localDataCenter) throws UnavailableException, IOException, TimeoutException {
 		InetAddress endpoint=findSuitableEndpoint(mutation.getTable(),mutation.key(),localDataCenter);
+		if(endpoint.equals(FBUtilities.getBroadcastAddress())){
+			return applyCounterMutationOnCoordinator(mutation,localDataCenter);
+		}else{
+			String table=mutation.getTable();
+			AbstractReplicationStrategy rs=Table.open(table).getReplicationStrategy();
+			Collection<InetAddress> writeEndpoints=getWriteEndpoints(table,mutation.key());
+			rs.getWriteResponseHandler(writeEndpoints,mutation.consistency()).assureSufficientLiveNodes();
+			IWriteResponseHandler  responseHandler=WriteResponseHandler.create(endpoint);
+			Message message=mutation.makeMutationMessage(Gossiper.instance.getVersion(endpoint));
+            if (logger.isDebugEnabled())
+                logger.debug("forwarding counter update of key " + ByteBufferUtil.bytesToHex(mutation.key()) + " to " + endpoint);
+            MessagingService.instance().sendRR(message, endpoint, responseHandler);
+			return responseHandler;
+		}
+	}
+
+	private static IWriteResponseHandler applyCounterMutationOnCoordinator(
+			CounterMutation mutation, String localDataCenter) throws UnavailableException, IOException, TimeoutException {
+		return performWrite(mutation,mutation.consistency(),localDataCenter,counterWriteOnCoordinatorPerformer);
 	}
 
 	private static InetAddress findSuitableEndpoint(String table,

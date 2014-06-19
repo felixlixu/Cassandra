@@ -4,6 +4,7 @@ import java.net.InetAddress;
 
 import org.apache.cassandra.concurrent.Stage;
 import org.apache.cassandra.service.StorageService;
+import org.apache.cassandra.service.StorageService.Verb;
 
 public class Message {
 
@@ -23,7 +24,7 @@ public class Message {
 	public Message(InetAddress from,StorageService.Verb verb,byte[] body,int version){
 		this(new Header(from,verb),body,version);
 	}
-	
+
 	public byte[] getHeader(String key){
 		return this.header_.getDetail(key);
 	}

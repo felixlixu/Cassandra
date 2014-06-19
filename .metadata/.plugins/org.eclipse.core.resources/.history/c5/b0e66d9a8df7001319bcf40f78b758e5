@@ -1,0 +1,53 @@
+package org.apache.cassandra.db;
+
+import java.util.Iterator;
+
+import org.apache.cassandra.db.marshal.AbstractType;
+import org.apache.cassandra.utils.Allocator;
+
+public class AtomicSortedColumns implements ISortedColumns{
+
+	private static  final Factory factory=new Factory(){
+
+		@Override
+		public ISortedColumns create(AbstractType comparator,
+				boolean reversedInsertOrder) {
+			return new AtomicSortedColumns(comparator);
+		}
+		
+	};
+
+	public AtomicSortedColumns(AbstractType<?> comparator) {
+		this(new Holder(comparator));
+	}
+
+	@Override
+	public Iterator<IColumn> iterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void addColumn(IColumn column, Allocator allocator) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public static ISortedColumns.Factory factory() {
+		return factory;
+	}
+
+	private static class Holder{
+
+		public Holder(AbstractType<?> comparator) {
+			this(new SnapTreeMap<ByteBuffer,IColumn>(comparator),new DelectionInfo());
+		}
+		
+	}
+}

@@ -1,5 +1,7 @@
 package org.apache.cassandra.db;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -7,18 +9,34 @@ import java.util.Map;
 
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.filter.QueryPath;
+import org.apache.cassandra.io.IColumnSerializer;
+import org.apache.cassandra.io.IVersionedSerializer;
 import org.apache.cassandra.net.Message;
 import org.apache.cassandra.net.MessageProducer;
+import org.apache.cassandra.utils.ByteBufferUtil;
+import org.apache.cassandra.utils.FBUtilities;
 
 public class RowMutation implements IMutation,MessageProducer {
 
 	private String table_;
 	private ByteBuffer key_;
+	// It is used to Multipe insert
 	protected Map<Integer,ColumnFamily> modifications_=new HashMap<Integer,ColumnFamily>();
+	private static RowMutationSerializer serializer_ = new RowMutationSerializer();
+	
+    public static RowMutationSerializer serializer()
+    {
+        return serializer_;
+    }
 	
 	public RowMutation(String keyspace, ByteBuffer key) {
 		table_=keyspace;
 		key_=key;
+	}
+
+	public RowMutation(String table, ByteBuffer key,
+			Map<Integer, ColumnFamily> modifications) {
+		// TODO Auto-generated constructor stub
 	}
 
 	@Override
@@ -34,6 +52,7 @@ public class RowMutation implements IMutation,MessageProducer {
 	}
 
 	public void addCounter(QueryPath path, long value) {
+		//every cf has a integer property to id.
 		Integer id=Schema.instance.getId(table_,path.columnFamilyName);
 		ColumnFamily columnFamily=modifications_.get(id);
 		if(columnFamily==null){
@@ -54,5 +73,59 @@ public class RowMutation implements IMutation,MessageProducer {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+    public static class RowMutationSerializer implements IVersionedSerializer<RowMutation>
+    {
+        public void serialize(RowMutation rm, DataOutput dos, int version) throws IOException
+        {
+            dos.writeUTF(rm.getTable());
+            ByteBufferUtil.writeWithShortLength(rm.key(), dos);
+
+            /* serialize the modifications_ in the mutation */
+            int size = rm.modifications_.size();
+            dos.writeInt(size);
+            assert size >= 0;
+            for (Map.Entry<Integer,ColumnFamily> entry : rm.modifications_.entrySet())
+            {
+                dos.writeInt(entry.getKey());
+                ColumnFamily.serializer().serialize(entry.getValue(), dos);
+            }
+        }
+
+        public RowMutation deserialize(DataInput dis, int version, IColumnSerializer.Flag flag) throws IOException
+        {
+            String table = dis.readUTF();
+            ByteBuffer key = ByteBufferUtil.readWithShortLength(dis);
+            Map<Integer, ColumnFamily> modifications = new HashMap<Integer, ColumnFamily>();
+            int size = dis.readInt();
+            for (int i = 0; i < size; ++i)
+            {
+                Integer cfid = Integer.valueOf(dis.readInt());
+                ColumnFamily cf = ColumnFamily.serializer().deserialize(dis, flag, TreeMapBackedSortedColumns.factory());
+                modifications.put(cfid, cf);
+            }
+            return new RowMutation(table, key, modifications);
+        }
+
+        public RowMutation deserialize(DataInput dis, int version) throws IOException
+        {
+            return deserialize(dis, version, IColumnSerializer.Flag.FROM_REMOTE);
+        }
+
+        public long serializedSize(RowMutation rm, int version)
+        {
+            int size = DBConstants.shortSize + FBUtilities.encodedUTF8Length(rm.getTable());
+            size += DBConstants.shortSize + rm.key().remaining();
+
+            size += DBConstants.intSize;
+            for (Map.Entry<Integer,ColumnFamily> entry : rm.modifications_.entrySet())
+            {
+                size += DBConstants.intSize;
+                size += entry.getValue().serializedSize();
+            }
+
+            return size;
+        }
+    }
 
 }

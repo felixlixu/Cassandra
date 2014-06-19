@@ -34,7 +34,7 @@ public class StorageService implements IEndpointStateChangeSubscriber,StorageSer
 	public enum Verb{
 		READ,
 		MUTATION,
-		REQUEST_RESPONSE
+		REQUEST_RESPONSE, COUNTER_MUTATION
 		
 	}
 	public static final Verb[] VERBS=Verb.values();
@@ -42,6 +42,7 @@ public class StorageService implements IEndpointStateChangeSubscriber,StorageSer
 	{{
 		put(Verb.READ,Stage.READ);
 		put(Verb.MUTATION,Stage.MUTATION);
+		put(Verb.COUNTER_MUTATION,Stage.MUTATION);
 	}};
 	
 	public static final DebuggableScheduledThreadPoolExecutor optionalTasks=new DebuggableScheduledThreadPoolExecutor("OptionalTasks");

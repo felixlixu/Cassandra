@@ -3,12 +3,18 @@ package org.apache.cassandra.locator;
 import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.dht.RingPosition;
 import org.apache.cassandra.dht.Token;
+import org.apache.cassandra.service.DatacenterSyncWriteResponseHandler;
+import org.apache.cassandra.service.DatacenterWriteResponseHandler;
+import org.apache.cassandra.service.IWriteResponseHandler;
+import org.apache.cassandra.service.WriteRespnseHandler;
+import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,6 +96,17 @@ public abstract class AbstractReplicationStrategy {
 	}
 
 	public abstract int getReplicationFactor();
+
+	public IWriteResponseHandler getWriteResponseHandler(
+			Collection<InetAddress> writeEndpoints,
+			ConsistencyLevel consistency_level) {
+		if(consistency_level==ConsistencyLevel.LOCAL_QUORUM){
+			return DatacenterWriteResponseHandler.create(writeEndpoints,consistency_level,table);
+		}else if(consistency_level=ConsistencyLevel.EACH_QUORUM){
+			return DatacenterSyncWriteResponseHandler.create(writeEndpoints,consistency_level,table);
+		}
+		return WriteResponseHandler.create(writeEndpoints,consistency_level,table);
+	}
 		
 	
 

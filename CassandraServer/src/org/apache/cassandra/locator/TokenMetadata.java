@@ -2,17 +2,27 @@ package org.apache.cassandra.locator;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
 public class TokenMetadata {
 
@@ -25,6 +35,7 @@ public class TokenMetadata {
 	/* list of subscribers that are notified when the tokenToEndpointMap changed */
 	 private final CopyOnWriteArrayList<AbstractReplicationStrategy> subscribes = new CopyOnWriteArrayList<AbstractReplicationStrategy>();
 
+	 private ConcurrentMap<String, Multimap<Range<Token>, InetAddress>> pendingRanges = new ConcurrentHashMap<String, Multimap<Range<Token>, InetAddress>>();
 	 
 		public TokenMetadata(HashBiMap<Token, InetAddress> create) {
 			if(tokenToEndpointMap==null)
@@ -87,5 +98,36 @@ public class TokenMetadata {
 
 		public void unregister(AbstractReplicationStrategy replicationStrategy) {
 			subscribes.remove(replicationStrategy);
+		}
+
+		public Collection<InetAddress> getWriteEndpoints(Token tk,
+				String table, List<InetAddress> naturalEndpoints) {
+			Map<Range<Token>,Collection<InetAddress>> ranges=getPendingRanges(table);
+			if(ranges.isEmpty())
+				return naturalEndpoints;
+			
+			Set<InetAddress> endpoints=new HashSet<InetAddress>(naturalEndpoints);
+			for(Map.Entry<Range<Token>, Collection<InetAddress>> entry:ranges.entrySet()){
+				if(entry.getKey().contains(tk)){
+					endpoints.addAll(entry.getValue());
+				}
+			}
+			return endpoints;
+		}
+
+		private Map<Range<Token>, Collection<InetAddress>> getPendingRanges(
+				String table) {
+			return getPendingRangesMM(table).asMap();
+		}
+
+		private Multimap<Range<Token>,InetAddress> getPendingRangesMM(String table) {
+			Multimap<Range<Token>,InetAddress> map=pendingRanges.get(table);
+			if(map==null){
+				map=HashMultimap.create();
+				Multimap<Range<Token>,InetAddress> priorMap=pendingRanges.putIfAbsent(table,map);
+				if(priorMap!=null)
+					map=priorMap;
+			}
+			return map;
 		}
 }

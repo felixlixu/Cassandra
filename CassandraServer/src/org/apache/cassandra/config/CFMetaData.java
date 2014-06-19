@@ -5,13 +5,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.cassandra.db.Column;
 import org.apache.cassandra.db.ColumnFamilyType;
+import org.apache.cassandra.db.SuperColumn;
 import org.apache.cassandra.db.SystemTable;
 import org.apache.cassandra.db.Table;
 import org.apache.cassandra.db.compaction.AbstractCompactionStrategy;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.db.marshal.UTF8Type;
+import org.apache.cassandra.io.IColumnSerializer;
 import org.apache.cassandra.io.compress.CompressionParameters;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.slf4j.Logger;
@@ -37,7 +40,7 @@ public final class CFMetaData {
 
 	public final String cfName;
 
-	private AbstractType comparator;
+	public AbstractType comparator;
 
 	public Integer cfId;
 
@@ -173,6 +176,11 @@ public final class CFMetaData {
 	}
 	public boolean getReplicateOnWrite() {
 		return replicateOnWrite;
+	}
+	public IColumnSerializer getColumnSerializer() {
+		if(cfType==ColumnFamilyType.Standard)
+			return Column.serializer();
+		return SuperColumn.serializer(subcolumnComparator);
 	}
 
 }

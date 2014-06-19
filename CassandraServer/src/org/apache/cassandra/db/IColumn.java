@@ -6,4 +6,8 @@ public interface IColumn {
 
 	public static final int MAX_NAME_LENGTH = FBUtilities.MAX_UNSIGNED_SHORT;
 
+	int serializedSize();
+
+	void addColumn(CounterUpdateColumn column);
+
 }

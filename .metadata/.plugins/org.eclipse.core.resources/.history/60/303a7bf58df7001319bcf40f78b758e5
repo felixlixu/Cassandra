@@ -1,0 +1,18 @@
+package org.apache.cassandra.db;
+
+import org.apache.cassandra.db.marshal.AbstractType;
+import org.apache.cassandra.utils.Allocator;
+
+public interface ISortedColumns extends IIterableColumns {
+
+    public interface Factory
+    {
+
+		ISortedColumns create(AbstractType comparator, boolean reversedInsertOrder);
+    	
+    }
+
+	boolean isEmpty();
+
+	public void addColumn(IColumn column, Allocator allocator);
+}

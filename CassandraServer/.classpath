@@ -16,5 +16,6 @@
 	<classpathentry kind="lib" path="D:/Cassandra/CassandraServer/lib/snakeyaml-1.11.jar"/>
 	<classpathentry kind="lib" path="D:/Cassandra/CassandraServer/lib/concurrentlinkedhashmap-lru-1.2.jar"/>
 	<classpathentry kind="lib" path="D:/Cassandra/CassandraServer/lib/jamm-0.2.5.jar"/>
+	<classpathentry kind="lib" path="D:/Cassandra/CassandraServer/lib/snaptree-0.1-SNAPSHOT.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

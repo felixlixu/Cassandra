@@ -60,8 +60,8 @@ public abstract class ReadCommand implements MessageProducer,IReadCommand {
 		return null;
 	}
 
+	
 	public void maybeTrim(Row row) {
-		// TODO Auto-generated method stub
 		
 	}
 

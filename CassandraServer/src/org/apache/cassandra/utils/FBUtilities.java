@@ -1,6 +1,7 @@
 package org.apache.cassandra.utils;
 
 import java.io.FileDescriptor;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
@@ -18,6 +19,8 @@ import java.util.TreeSet;
 import org.apache.cassandra.cache.IRowCacheProvider;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.io.IVersionedSerializer;
+import org.apache.cassandra.io.utils.DataOutputBuffer;
 import org.apache.cassandra.locator.IEndpointSnitch;
 import org.apache.cassandra.net.IAsyncResult;
 
@@ -216,6 +219,17 @@ public class FBUtilities {
 		if(!cache_provider.contains("."))
 			cache_provider = "org.apache.cassandra.cache." + cache_provider;
 		return FBUtilities.construct(cache_provider, "row cache provider");
+	}
+
+	public static<T> byte[] serialize(T object,
+			IVersionedSerializer<T> serializer, int version) throws IOException {
+        int size = (int) serializer.serializedSize(object, version);
+        DataOutputBuffer buffer = new DataOutputBuffer(size);
+        serializer.serialize(object, buffer, version);
+        assert buffer.getLength() == size && buffer.getData().length == size
+               : String.format("Final buffer length %s to accomodate data size of %s (predicted %s) for %s",
+                               buffer.getData().length, buffer.getLength(), size, object);
+        return buffer.getData();
 	}
 
 }

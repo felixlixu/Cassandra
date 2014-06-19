@@ -18,5 +18,6 @@ public interface IEndpointSnitch {
 
 	int compareEndpoints(InetAddress target,InetAddress a1,InetAddress a2);
 
+	/** Return a String representing the datacenter this endpoint belongs to.*/
 	String getDatacenter(InetAddress endpoint);
 }

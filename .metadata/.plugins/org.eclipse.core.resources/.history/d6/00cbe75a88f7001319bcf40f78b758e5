@@ -1,0 +1,11 @@
+package org.apache.cassandra.db;
+
+public class Column implements IColumn {
+
+	@Override
+	public int serializedSize() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+}

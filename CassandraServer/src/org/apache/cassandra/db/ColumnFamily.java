@@ -5,13 +5,26 @@ import java.util.Iterator;
 
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.Schema;
+import org.apache.cassandra.db.ISortedColumns.Factory;
 import org.apache.cassandra.db.filter.QueryPath;
 import org.apache.cassandra.db.marshal.AbstractType;
+import org.apache.cassandra.io.IColumnSerializer;
 
 public class ColumnFamily extends AbstractColumnContainer {
 
+	private int boolSize;
+	private int intSize;
+	private int longSize;
+	
+
 	protected ColumnFamily(ISortedColumns columns) {
 		super(columns);
+	}
+
+	public ColumnFamily(CFMetaData cfm, ISortedColumns map) {
+		super(map);
+		assert cfm!=null;
+		this.cfm=cfm;
 	}
 
 	private static ColumnFamilySerializer serializer=new ColumnFamilySerializer();
@@ -42,14 +55,70 @@ public class ColumnFamily extends AbstractColumnContainer {
 		return create(Schema.instance.getCFMetaData(tableName, cfName));
 	}
 
-	private static ColumnFamily create(CFMetaData cfMetaData) {
-		// TODO Auto-generated method stub
-		return null;
+	public static ColumnFamily create(CFMetaData cfm) {
+		return create(cfm,TreeMapBackedSortedColumns.factory());
+	}
+	
+	public static ColumnFamily create(CFMetaData cfm,ISortedColumns.Factory factory){
+		return create(cfm,factory,false);
+	}
+
+	private static ColumnFamily create(CFMetaData cfm, Factory factory,
+			boolean reversedInsertOrder) {
+		return new ColumnFamily(cfm,factory.create(cfm.comparator,reversedInsertOrder));
 	}
 
 	public void addCounter(QueryPath path, long value) {
-		// TODO Auto-generated method stub
-		
+		assert path.columnName!=null:path;
+		addColumn(path.superColumnName,new CounterUpdateColumn(path.columnName,value,System.currentTimeMillis()));
 	}
+
+	public void addColumn(ByteBuffer superColumnName,
+			CounterUpdateColumn column) {
+		IColumn c;
+		if(superColumnName==null){
+			c=column;
+		}else{
+			assert isSuper();
+			c=new SuperColumn(superColumnName,getSubComparator());
+			c.addColumn(column);
+		}
+		addColumn(c);
+	}
+
+
+
+	private AbstractType getSubComparator() {
+		IColumnSerializer s=getColumnSerializer();
+		return (s instanceof SuperColumnSerializer)? ((SuperColumnSerializer) s).getComparator() : null;
+	}
+
+	private IColumnSerializer getColumnSerializer() {
+		return cfm.getColumnSerializer();
+	}
+
+	public boolean isSuper() {
+		return getType()==ColumnFamilyType.Super;
+	}
+	
+	public ColumnFamilyType getType(){
+		return cfm.cfType;
+	}
+
+	public long serializedSize() {
+        return boolSize // nullness bool
+                + intSize // id
+                + serializedSizeForSSTable();
+	}
+	
+    public long serializedSizeForSSTable()
+    {
+        int size = intSize // local deletion time
+                 + longSize // client deletion time
+                 + intSize; // column count
+        for (IColumn column : columns)
+            size += column.serializedSize();
+        return size;
+    }
 
 }

@@ -3,7 +3,7 @@
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
 		<item value="257" key="DIALOG_WIDTH"/>
 		<item value="99" key="DIALOG_Y_ORIGIN"/>
-		<item value="857" key="DIALOG_X_ORIGIN"/>
+		<item value="694" key="DIALOG_X_ORIGIN"/>
 		<item value="380" key="DIALOG_HEIGHT"/>
 		<item value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI" key="DIALOG_FONT_NAME"/>
 	</section>
@@ -13,16 +13,16 @@
 		<item value="false" key="isRegEx"/>
 		<item value="false" key="incremental"/>
 		<item value="false" key="wholeword"/>
-		<item value="internal_get" key="selection"/>
+		<item value="mutate" key="selection"/>
 		<list key="findhistory">
+			<item value="mutate"/>
+			<item value="IWriteResponseHandler"/>
+			<item value="fetchRows"/>
 			<item value="internal_get"/>
 			<item value="GET"/>
 			<item value="hasStringsInBloomFilter"/>
 			<item value="SSTableMetadata"/>
 			<item value="get_count"/>
-			<item value="getCachePath"/>
-			<item value="AutoSavingCache"/>
-			<item value="estimateSizeToSave"/>
 		</list>
 		<list key="replacehistory">
 		</list>

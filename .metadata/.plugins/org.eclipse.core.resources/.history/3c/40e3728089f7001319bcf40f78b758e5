@@ -1,0 +1,104 @@
+package org.apache.cassandra.db;
+
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+
+import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.Schema;
+import org.apache.cassandra.db.ISortedColumns.Factory;
+import org.apache.cassandra.db.filter.QueryPath;
+import org.apache.cassandra.db.marshal.AbstractType;
+
+public class ColumnFamily extends AbstractColumnContainer {
+
+	private int boolSize;
+	private int intSize;
+	private int longSize;
+	
+
+	protected ColumnFamily(ISortedColumns columns) {
+		super(columns);
+	}
+
+	public ColumnFamily(CFMetaData cfm, ISortedColumns map) {
+		super(map);
+		assert cfm!=null;
+		this.cfm=cfm;
+	}
+
+	private static ColumnFamilySerializer serializer=new ColumnFamilySerializer();
+	
+    public static AbstractType getComparatorFor(String table, String columnFamilyName, ByteBuffer superColumnName)
+    {
+        return superColumnName == null
+               ? Schema.instance.getComparator(table, columnFamilyName)
+               : Schema.instance.getSubComparator(table, columnFamilyName);
+    }
+
+	public static ColumnFamilySerializer serializer() {
+		return serializer;
+	}
+
+	@Override
+	public Iterator<IColumn> iterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static ByteBuffer digest(ColumnFamily cf) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static ColumnFamily create(String tableName, String cfName) {
+		return create(Schema.instance.getCFMetaData(tableName, cfName));
+	}
+
+	public static ColumnFamily create(CFMetaData cfm) {
+		return create(cfm,TreeMapBackedSortedColumns.factory());
+	}
+	
+	public static ColumnFamily create(CFMetaData cfm,ISortedColumns.Factory factory){
+		return create(cfm,factory,false);
+	}
+
+	private static ColumnFamily create(CFMetaData cfm, Factory factory,
+			boolean reversedInsertOrder) {
+		return new ColumnFamily(cfm,factory.create(cfm.comparator,reversedInsertOrder));
+	}
+
+	public void addCounter(QueryPath path, long value) {
+		assert path.columnName!=null:path;
+		addColumn(path.superColumnName,new CounterUpdateColumn(path.columnName,value,System.currentTimeMillis()));
+	}
+
+	public void addColumn(ByteBuffer superColumnName,
+			CounterUpdateColumn column) {
+		IColumn c;
+		if(superColumnName==null){
+			c=column;
+		}else{
+			assert isSuper();
+			c=new SuperColumn(superColumnName,getSubComparator());
+			c.addColumn(column);
+		}
+		addColumn(c);
+	}
+
+	public long serializedSize() {
+        return boolSize // nullness bool
+                + intSize // id
+                + serializedSizeForSSTable();
+	}
+	
+    public long serializedSizeForSSTable()
+    {
+        int size = intSize // local deletion time
+                 + longSize // client deletion time
+                 + intSize; // column count
+        for (IColumn column : columns)
+            size += column.serializedSize();
+        return size;
+    }
+
+}

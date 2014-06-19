@@ -1,0 +1,13 @@
+package org.apache.cassandra.dht;
+
+import java.io.Serializable;
+
+public class Range<T extends RingPosition> extends AbstractBounds<T> implements Comparable<Range<T>>,Serializable {
+
+	@Override
+	public int compareTo(Range<T> arg0) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+}

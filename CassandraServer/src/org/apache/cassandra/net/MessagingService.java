@@ -11,6 +11,7 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.ReadVerbHandler;
 import org.apache.cassandra.db.Row;
 import org.apache.cassandra.gms.Gossiper;
+import org.apache.cassandra.service.IWriteResponseHandler;
 import org.apache.cassandra.service.ReadCallback;
 import org.apache.cassandra.service.RepairCallback;
 import org.apache.cassandra.service.StorageService;
@@ -104,6 +105,7 @@ public class MessagingService implements MessagingServiceMBean {
 	}
 	
 	private static AtomicInteger idGen=new AtomicInteger();
+	private IMessageCallback cb;
 	private static String nextId(){
 		return Integer.toString(idGen.incrementAndGet());
 	}

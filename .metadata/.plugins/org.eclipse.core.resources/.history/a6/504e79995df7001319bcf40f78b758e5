@@ -1,0 +1,12 @@
+package org.apache.cassandra.service;
+
+import java.net.InetAddress;
+
+public class WriteResponseHandler extends AbstractWriteResponseHandler {
+
+	public static IWriteResponseHandler create(InetAddress endpoint) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}
