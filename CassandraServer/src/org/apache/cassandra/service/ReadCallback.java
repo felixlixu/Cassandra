@@ -11,6 +11,7 @@ import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.ReadCommand;
+import org.apache.cassandra.db.ReadResponse;
 import org.apache.cassandra.db.Row;
 import org.apache.cassandra.db.Table;
 import org.apache.cassandra.net.IAsyncCallback;
@@ -120,6 +121,18 @@ public class ReadCallback<T> implements IAsyncCallback {
 			throw new TimeoutException("Operation timed out - received only " + received.get() + " responses from " + sb.toString() + " .");
 		}
 		return blockfor == 1 ? resolver.getData() : resolver.resolve();
+	}
+
+	protected boolean waitingFor(ReadResponse response){
+		return true;
+	}
+	
+	public void response(ReadResponse result) {
+		((RowDigestResolver)resolver).injectPreProcessed(result);
+		int n=waitingFor(result)
+			 ?received.incrementAndGet()
+			 :received.get();
+		
 	}
 
 }

@@ -10,9 +10,12 @@ import java.util.Map;
 
 import org.apache.cassandra.db.filter.QueryPath;
 import org.apache.cassandra.io.IVersionedSerializer;
+import org.apache.cassandra.net.Message;
 import org.apache.cassandra.net.MessageProducer;
 import org.apache.cassandra.service.IReadCommand;
 import org.apache.cassandra.service.RepairCallback;
+import org.apache.cassandra.service.StorageService;
+import org.apache.cassandra.utils.FBUtilities;
 
 public abstract class ReadCommand implements MessageProducer,IReadCommand {
 
@@ -59,14 +62,18 @@ public abstract class ReadCommand implements MessageProducer,IReadCommand {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
+	
+	@Override
+	public Message getMessage(Integer version) throws IOException {
+		byte[] bytes=FBUtilities.serialize(this, serializer, version);
+		return new Message(FBUtilities.getBroadcastAddress(),StorageService.Verb.READ,bytes,version);
+	}
 	
 	public void maybeTrim(Row row) {
-		
+		// noop
 	}
 
 	public ReadCommand maybeGenerateRetryCommand(RepairCallback handler, Row row) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 

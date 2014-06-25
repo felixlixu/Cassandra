@@ -1,0 +1,37 @@
+package org.apache.cassandra.net;
+
+import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.service.StorageService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class MessageDeliveryTask implements Runnable {
+
+	private static final Logger logger = LoggerFactory.getLogger(MessageDeliveryTask.class);
+	private final Message message;
+	private final String id;
+	private final long constructionTime=System.currentTimeMillis();
+
+	public MessageDeliveryTask(Message message, String id) {
+		assert message!=null;
+		this.message=message;
+		this.id=id;
+	}
+
+	@Override
+	public void run() {
+		StorageService.Verb verb=message.getVerb();
+		if(MessagingService.DROPPABLE_VAERBS.contains(verb)
+				&& System.currentTimeMillis()>constructionTime+DatabaseDescriptor.getRpcTimeout()){
+			MessagingService.instance().incrementDroppedMessage(verb);
+			return;
+		}
+		IVerbHandler verbHandler=MessagingService.instance().getVerbHandler(verb);
+		if(verbHandler==null){
+			logger.debug("Unknow verb {}",verb);
+			return;
+		}
+		verbHandler.doVerb(message, id);
+	}
+
+}

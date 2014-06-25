@@ -1,6 +1,7 @@
 package org.apache.cassandra.db;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 
 import org.apache.cassandra.io.IColumnSerializer;
 
@@ -35,6 +36,42 @@ public class Column implements IColumn {
 	public void addColumn(CounterUpdateColumn column) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public ByteBuffer name() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Collection<IColumn> getSubColumns() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int serializationFlags() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int getLocalDeletionTime() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public long timestamp() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public ByteBuffer value() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

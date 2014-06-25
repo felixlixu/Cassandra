@@ -24,4 +24,12 @@ public abstract class AbstractColumnContainer implements IColumnContainer,IItera
 	public void addColumn(IColumn column, Allocator allocator) {
 		columns.addColumn(column,allocator);
 	}
+	
+	public int getLocalDeletionTime(){
+		return columns.getDeletionInfo().localDeletionTime;
+	}
+	
+	public long getMarkedForDeleteAt(){
+		return columns.getDeletionInfo().markedForDeleteAt;
+	}
 }

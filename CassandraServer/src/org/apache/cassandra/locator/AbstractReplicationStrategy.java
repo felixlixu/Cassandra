@@ -13,7 +13,7 @@ import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.service.DatacenterSyncWriteResponseHandler;
 import org.apache.cassandra.service.DatacenterWriteResponseHandler;
 import org.apache.cassandra.service.IWriteResponseHandler;
-import org.apache.cassandra.service.WriteRespnseHandler;
+import org.apache.cassandra.service.WriteResponseHandler;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
 import org.slf4j.Logger;
@@ -102,7 +102,7 @@ public abstract class AbstractReplicationStrategy {
 			ConsistencyLevel consistency_level) {
 		if(consistency_level==ConsistencyLevel.LOCAL_QUORUM){
 			return DatacenterWriteResponseHandler.create(writeEndpoints,consistency_level,table);
-		}else if(consistency_level=ConsistencyLevel.EACH_QUORUM){
+		}else if(consistency_level==ConsistencyLevel.EACH_QUORUM){
 			return DatacenterSyncWriteResponseHandler.create(writeEndpoints,consistency_level,table);
 		}
 		return WriteResponseHandler.create(writeEndpoints,consistency_level,table);

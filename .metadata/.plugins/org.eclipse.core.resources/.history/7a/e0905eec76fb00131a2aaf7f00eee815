@@ -1,0 +1,117 @@
+package org.apache.cassandra.locator;
+
+import java.net.InetAddress;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.utils.AbstractStatesDeque;
+import org.apache.cassandra.utils.FBUtilities;
+
+public class DynamicEndpointSnitch  extends AbstractEndpointSnitch implements ILatencySubscriber, DynamicEndpointSnitchMBean {
+
+	private static final int UPDATES_PER_INTERVAL=10000;
+	private double BADNESS_THRESHOLD=DatabaseDescriptor.getDynamicBadnessThreshold();
+	public final IEndpointSnitch subsnitch;
+	private final ConcurrentHashMap<InetAddress,Double> scores=new ConcurrentHashMap<InetAddress,Double>();
+	private final ConcurrentHashMap<InetAddress,AdaptiveLatencyTracker> windows=ConcurrentHashMap<InetAddress,AdaptiveLatencyTracker>();
+	private String mbeanName;
+	private final AtomicInteger intervalupdates=new AtomicInteger(0);
+	
+	public DynamicEndpointSnitch(IEndpointSnitch snitch) {
+		mbeanName="org.apache.cassandra.db:type=DynamicEndpointSnitch,instance="+hashCode();
+		subsnitch=snitch;
+		
+	}
+
+	@Override
+	public int compareEndpoints(InetAddress target, InetAddress a1,
+			InetAddress a2) {
+		Double scored1=scores.get(a1);
+		Double scored2=scores.get(a2);
+		
+		if(scored1==null){
+			scored1=0.0;
+			receiveTiming(a1,0.0);
+		}
+		
+		if(scored2==null){
+			scored2=0.0;
+			receiveTiming(a2,0.0);
+		}
+		
+		if(scored1.equals(scored2))
+			return subsnitch.compareEndpoints(target, a1, a2);
+		if(scored1<scored2)
+			return -1;
+		else
+			return 1;
+		
+	}
+
+	@Override
+	public String getDatacenter(InetAddress endpoint) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void receiveTiming(InetAddress address, double latency) {
+		if(intervalupdates.intValue()>=UPDATES_PER_INTERVAL)
+			return;
+		AdaptiveLatencyTracker tracker=windows.get(host);
+		if(tracker==null)
+		{
+			
+		}
+		tracker.add(latency);
+		intervalupdates.getAndIncrement();
+	}
+	
+	public void sortByProximity(final InetAddress address,List<InetAddress> addresses){
+		assert address.equals(FBUtilities.getBroadcastAddress());
+		if(BADNESS_THRESHOLD==0){
+			sortByProximityWithScore(address,addresses);
+		}else{
+			sortByProximityWithBadness(address,addresses);
+		}
+	}
+
+	private void sortByProximityWithBadness(InetAddress address,
+			List<InetAddress> addresses) {
+		if(addresses.size()<2)
+			return;
+		subsnitch.sortByProximity(address,addresses);
+		Double first=scores.get(addresses.get(0));
+		for(InetAddress addr:addresses){
+			Double next=scores.get(addr);
+			if(next==null)
+				return;
+			if((first-next)/first>BADNESS_THRESHOLD){
+				sortByProximityWithScore(address,addresses);
+				return;
+			}
+		}
+	}
+
+	private void sortByProximityWithScore(InetAddress address,
+			List<InetAddress> addresses) {
+		super.sortByProximity(address, addresses);
+	}
+}
+class AdaptiveLatencyTracker extends AbstractStatesDeque{
+
+	private final LinkedBlockingDeque<Double> latencies;
+	AdaptiveLatencyTracker(int size){
+		latencies=new LinkedBlockingDeque<Double>(size);
+	}
+	
+	@Override
+	public Iterator<Double> iterator() {
+		return latencies.iterator();
+	}
+	
+}

@@ -1,5 +1,5 @@
 package org.apache.cassandra.concurrent;
-
+// Type of Message send.
 public enum Stage {
     READ,
     MUTATION,

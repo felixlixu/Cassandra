@@ -50,12 +50,6 @@ public class SliceByNamesReadCommand extends ReadCommand {
     }
 
 	@Override
-	public Message getMessage(Integer version) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
 	public Row getRow(Table table) throws IOException {
 		// TODO Auto-generated method stub
 		return null;

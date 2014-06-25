@@ -1,0 +1,62 @@
+package org.apache.cassandra.db;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
+import org.apache.cassandra.io.IColumnSerializer;
+
+public class ColumnSerializer implements IColumnSerializer {
+
+    private static final Logger logger = LoggerFactory.getLogger(ColumnSerializer.class);
+    
+    public final static int DELETION_MASK       = 0x01;
+    public final static int EXPIRATION_MASK     = 0x02;
+    public final static int COUNTER_MASK        = 0x04;
+    public final static int COUNTER_UPDATE_MASK = 0x08;
+	
+	@Override
+	public void serialize(IColumn t, DataOutput dos) throws IOException {
+        assert column.name().remaining() > 0;
+        ByteBufferUtil.writeWithShortLength(column.name(), dos);
+        try
+        {
+            dos.writeByte(column.serializationFlags());
+            if (column instanceof CounterColumn)
+            {
+                dos.writeLong(((CounterColumn)column).timestampOfLastDelete());
+            }
+            else if (column instanceof ExpiringColumn)
+            {
+                dos.writeInt(((ExpiringColumn) column).getTimeToLive());
+                dos.writeInt(column.getLocalDeletionTime());
+            }
+            dos.writeLong(column.timestamp());
+            ByteBufferUtil.writeWithLength(column.value(), dos);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+	}
+
+	@Override
+	public IColumn deserialize(DataInput dis) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public long serializedSize(IColumn t) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public IColumn deserializer(DataInput in, Flag flag, int expireBefore)
+			throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

@@ -1,0 +1,12 @@
+package org.apache.cassandra.db;
+
+import java.nio.ByteBuffer;
+
+public class CounterColumn extends Column {
+
+	public CounterColumn(ByteBuffer name, ByteBuffer value, long timestamp) {
+		super(name, value, timestamp);
+		// TODO Auto-generated constructor stub
+	}
+
+}

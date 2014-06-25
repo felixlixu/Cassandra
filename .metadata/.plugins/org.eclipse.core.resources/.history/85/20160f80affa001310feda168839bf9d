@@ -1,0 +1,20 @@
+package org.apache.cassandra.net;
+
+public class MessageDeliveryTask implements Runnable {
+
+	private final Message message;
+	private final String id;
+
+	public MessageDeliveryTask(Message message, String id) {
+		assert message!=null;
+		this.message=message;
+		this.id=id;
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+
+	}
+
+}

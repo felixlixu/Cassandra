@@ -1,0 +1,22 @@
+package org.apache.cassandra.net;
+
+import org.apache.cassandra.service.StorageService;
+
+public class MessageDeliveryTask implements Runnable {
+
+	private final Message message;
+	private final String id;
+
+	public MessageDeliveryTask(Message message, String id) {
+		assert message!=null;
+		this.message=message;
+		this.id=id;
+	}
+
+	@Override
+	public void run() {
+		StorageService.Verb verb=message.getVerb();
+		if(MessagingService.DROPPABLE_VAERBS)
+	}
+
+}

@@ -330,4 +330,8 @@ public class DatabaseDescriptor {
 	public static Integer getIndexInterval() {
 		return conf.index_interval;
 	}
+
+	public static double getDynamicBadnessThreshold() {
+		return conf.dynamic_snitch_badness_threshold;
+	}
 }

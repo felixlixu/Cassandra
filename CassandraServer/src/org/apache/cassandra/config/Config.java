@@ -58,6 +58,8 @@ public class Config {
 	public DiskAccessMode disk_access_mode;
 
 	public Integer index_interval;
+
+	public double dynamic_snitch_badness_threshold;
 	
 	public static enum RequestSchedulerId{
 		keyspace

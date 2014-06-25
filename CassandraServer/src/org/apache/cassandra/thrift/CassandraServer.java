@@ -261,11 +261,7 @@ public class CassandraServer implements Cassandra.Iface {
 		ThriftValidation.validateColumnNames(metadata, column_parent, Arrays.asList(column.name));
 		// This is uesed to package the date that would be insert to db.
 		RowMutation rm=new RowMutation(keyspace,key);
-		try{
-			rm.addCounter(new QueryPath(column_parent.column_family,column_parent.super_column, column.name),column.value);
-		}catch(MarshalException e){
-			throw new InvalidRequestException(e.getMessage());
-		}
+		rm.addCounter(new QueryPath(column_parent.column_family,column_parent.super_column, column.name),column.value);
 		doInsert(consistency_level,Arrays.asList(new CounterMutation(rm, consistency_level)));
 	}
 

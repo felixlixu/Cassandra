@@ -1,4 +1,4 @@
-package org.apache.cassandra.db.SuperColumn;
+package org.apache.cassandra.db.superColumn;
 
 import org.apache.cassandra.db.filter.SliceQueryFilter;
 

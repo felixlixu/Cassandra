@@ -1,7 +1,7 @@
 package org.apache.cassandra.db.filter;
 
 import org.apache.cassandra.db.DecoratedKey;
-import org.apache.cassandra.db.SuperColumn.IdentityQueryFilter;
+import org.apache.cassandra.db.superColumn.IdentityQueryFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

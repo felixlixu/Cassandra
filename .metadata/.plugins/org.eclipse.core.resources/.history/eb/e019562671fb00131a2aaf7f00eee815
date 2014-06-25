@@ -1,0 +1,46 @@
+package org.apache.cassandra.locator;
+
+import java.net.InetAddress;
+import java.util.List;
+
+import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.utils.FBUtilities;
+
+public class DynamicEndpointSnitch  extends AbstractEndpointSnitch implements ILatencySubscriber, DynamicEndpointSnitchMBean {
+
+	
+	private double BADNESS_THRESHOLD=DatabaseDescriptor.getDynamicBadnessThreshold();
+	
+	public DynamicEndpointSnitch(IEndpointSnitch snitch) {
+		// TODO Auto-generated constructor stub
+	}
+
+	@Override
+	public int compareEndpoints(InetAddress target, InetAddress a1,
+			InetAddress a2) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public String getDatacenter(InetAddress endpoint) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void receiveTiming(InetAddress address, double latency) {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	public void sortByProximity(final InetAddress address,List<InetAddress> addresses){
+		assert address.equals(FBUtilities.getBroadcastAddress());
+		if(BADNESS_THRESHOLD==0){
+			sortByProximityWithScore(address,addresses);
+		}else{
+			sortByProximityWithBadness(address,addresses);
+		}
+	}
+
+}

@@ -1,0 +1,51 @@
+package org.apache.cassandra.db;
+
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+
+import org.apache.cassandra.db.marshal.AbstractType;
+import org.apache.cassandra.io.IColumnSerializer;
+
+public class SuperColumn extends AbstractColumnContainer implements IColumn {
+
+	private ByteBuffer name;
+
+	protected SuperColumn(ISortedColumns columns) {
+		super(columns);
+		// TODO Auto-generated constructor stub
+	}
+
+	public SuperColumn(ByteBuffer name, AbstractType comparator) {
+		this(name,AtomicSortedColumns.factory().create(comparator,false));
+	}
+
+	public SuperColumn(ByteBuffer name, ISortedColumns columns) {
+		super(columns);
+		assert name!=null;
+		assert name.remaining()<=IColumn.MAX_NAME_LENGTH;
+		this.name=name;
+	}
+
+	public static IColumnSerializer serializer(AbstractType subcolumnComparator) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Iterator<IColumn> iterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int serializedSize() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void addColumn(CounterUpdateColumn column) {
+		
+	}
+
+}

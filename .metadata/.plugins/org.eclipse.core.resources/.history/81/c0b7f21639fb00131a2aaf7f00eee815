@@ -1,0 +1,20 @@
+package org.apache.cassandra.net;
+
+import java.net.InetAddress;
+
+import org.apache.cassandra.concurrent.Stage;
+
+public class OutboundTcpConnectionPool {
+
+	public OutboundTcpConnectionPool(InetAddress to) {
+		// TODO Auto-generated constructor stub
+	}
+
+	public OutboundTcpConnection getConnection(Message message) {
+		Stage stage=message.getMessageType();
+		return stage==Stage.REQUEST_RESPONSE||stage==Stage.INTERNAL_RESPONSE||stage==Stage.GOSSIP
+				?ackCon
+				:comCon;
+	}
+
+}

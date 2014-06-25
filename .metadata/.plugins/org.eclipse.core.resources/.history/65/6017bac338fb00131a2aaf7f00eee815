@@ -1,0 +1,16 @@
+package org.apache.cassandra.net;
+
+import java.net.InetAddress;
+
+public class OutboundTcpConnectionPool {
+
+	public OutboundTcpConnectionPool(InetAddress to) {
+		// TODO Auto-generated constructor stub
+	}
+
+	public OutboundTcpConnection getConnection(Message message) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

@@ -1,0 +1,12 @@
+package org.apache.cassandra.service;
+
+import java.net.InetAddress;
+
+public class DatacenterWriteResponseHandler extends WriteResponseHandler {
+
+	protected DatacenterWriteResponseHandler(InetAddress endpoint) {
+		super(endpoint);
+		// TODO Auto-generated constructor stub
+	}
+
+}

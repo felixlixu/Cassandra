@@ -19,6 +19,8 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.CounterMutation;
 import org.apache.cassandra.db.IMutation;
 import org.apache.cassandra.db.ReadCommand;
+import org.apache.cassandra.db.ReadResponse;
+import org.apache.cassandra.db.ReadVerbHandler;
 import org.apache.cassandra.db.Row;
 import org.apache.cassandra.db.RowMutation;
 import org.apache.cassandra.db.Table;
@@ -318,8 +320,9 @@ public class StorageProxy implements StorageProxyMBean {
 
 	static class LocalReadRunnable extends DroppableRunnable{
 
-		private ReadCommand command;
-		private ReadCallback<Row> handler;
+		private final ReadCommand command;
+		private final ReadCallback<Row> handler;
+		private final long start=System.currentTimeMillis();
 
 		public LocalReadRunnable(ReadCommand command, ReadCallback<Row> handler) {
 			super(StorageService.Verb.READ);
@@ -329,8 +332,14 @@ public class StorageProxy implements StorageProxyMBean {
 
 		@Override
 		protected void runMayThrow() throws Exception {
-			// TODO Auto-generated method stub
+			if(logger.isDebugEnabled()){
+				logger.debug("LocalReadRunnable reading " + command);
+			}
 			
+			Table table=Table.open(command.table);
+			ReadResponse result=ReadVerbHandler.getResponse(command, command.getRow(table));
+			MessagingService.instance().addLatency(FBUtilities.getBroadcastAddress(),System.currentTimeMillis()-start);
+			handler.response(result);
 		}
 		
 	}

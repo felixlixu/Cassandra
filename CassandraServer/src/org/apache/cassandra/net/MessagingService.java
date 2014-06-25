@@ -3,21 +3,28 @@ package org.apache.cassandra.net;
 import java.io.IOError;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.cassandra.concurrent.StageManager;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.ReadVerbHandler;
-import org.apache.cassandra.db.Row;
 import org.apache.cassandra.gms.Gossiper;
-import org.apache.cassandra.service.IWriteResponseHandler;
-import org.apache.cassandra.service.ReadCallback;
-import org.apache.cassandra.service.RepairCallback;
+import org.apache.cassandra.locator.ILatencySubscriber;
+import org.apache.cassandra.net.sink.SinkManager;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.service.StorageService.Verb;
 import org.apache.cassandra.utils.ExpiringMap;
+import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.Pair;
+import org.cliffc.high_scale_lib.NonBlockingHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 
@@ -25,10 +32,19 @@ public class MessagingService implements MessagingServiceMBean {
 
 	public static final int VERSION_11=4;
 	public static final int version_=VERSION_11;
-	
+	private Logger logger=LoggerFactory.getLogger(MessagingService.class);
 	private static final long DEFAULT_CALLBACK_TIMEOUT = DatabaseDescriptor.getRpcTimeout();
-	 private final Map<StorageService.Verb, AtomicInteger> droppedMessages = new EnumMap<StorageService.Verb, AtomicInteger>(StorageService.Verb.class);
+	
+	public static final EnumSet<StorageService.Verb> DROPPABLE_VERBS = EnumSet.of(StorageService.Verb.REQUEST_RESPONSE,
+																		StorageService.Verb.COUNTER_MUTATION,
+																		StorageService.Verb.READ,
+																		StorageService.Verb.MUTATION);
+	
+	private final Map<StorageService.Verb, AtomicInteger> droppedMessages = new EnumMap<StorageService.Verb, AtomicInteger>(StorageService.Verb.class);
 	private final ExpiringMap<String,CallbackInfo> callbacks;
+	private final List<ILatencySubscriber> subscribers=new ArrayList<ILatencySubscriber>();
+	private final Map<StorageService.Verb,IVerbHandler> verbHandlers_;
+	private final NonBlockingHashMap<InetAddress,OutboundTcpConnectionPool> connectionManagers_=new NonBlockingHashMap<InetAddress,OutboundTcpConnectionPool>();
 	
     private static class MSHandle
     {
@@ -46,8 +62,25 @@ public class MessagingService implements MessagingServiceMBean {
 	};
 	
 	public MessagingService(){
-		
+		for(StorageService.Verb verb:DROPPABLE_VERBS){
+			droppedMessages.put(verb, new AtomicInteger());
+			//lastDroppedInternal
+		}
 		callbacks=new ExpiringMap<String,CallbackInfo>(DEFAULT_CALLBACK_TIMEOUT,timeoutReporter);
+		verbHandlers_=new EnumMap<StorageService.Verb,IVerbHandler>(StorageService.Verb.class);
+		
+		Runnable logDropped=new Runnable(){
+			public void run(){
+				logDroppedMessages();
+			}
+		};
+		
+	}
+
+	protected void logDroppedMessages() {
+		boolean logTpstats=false;
+		
+		
 	}
 
 	public void registerVerbHandlers(Verb read, ReadVerbHandler readVerbHandler) {
@@ -84,10 +117,50 @@ public class MessagingService implements MessagingServiceMBean {
 		return id;
 	}
 
-	
+	/**
+	 * Send a message to a given endpoint. This method adheres to the fire 
+	 * and forget style messaging.
+	 * */
 	public void sendOneWay(Message message, String id, InetAddress to) {
-		// TODO Auto-generated method stub
+		if(logger.isTraceEnabled())
+			logger.trace(FBUtilities.getBroadcastAddress()+"sending"+message.getVersion());
 		
+		if(message.getFrom().equals(to)){
+			receive(message,id);
+			return;
+		}
+		
+		Message processedMessage=SinkManager.processClientMessagE(message,id,to);
+		if(processedMessage==null){
+			return;
+		}
+		OutboundTcpConnection connection=getConnection(to,processedMessage);
+		connection.enqueue(processedMessage,id);
+	}
+
+	private OutboundTcpConnection getConnection(InetAddress to,
+			Message message) {
+		return getConnectionPool(to).getConnection(message);
+	}
+
+	private OutboundTcpConnectionPool getConnectionPool(InetAddress to) {
+		OutboundTcpConnectionPool cp=connectionManagers_.get(to);
+		if(cp==null){
+			connectionManagers_.putIfAbsent(to,new OutboundTcpConnectionPool(to));
+			cp=connectionManagers_.get(to);
+		}
+		return cp;
+	}
+
+	private void receive(Message message, String id) {
+        if (logger.isTraceEnabled())
+            logger.trace(FBUtilities.getBroadcastAddress() + " received " + message.getVerb()
+                          + " from " + id + "@" + message.getFrom());
+        message=SinkManager.processServerMessage(message,id);
+        Runnable runnable=new MessageDeliveryTask(message,id);
+        ExecutorService stage=StageManager.getStage(message.getMessageType());
+        assert stage!=null:"No stage for message type"+message.getMessageType();
+        stage.execute(runnable);
 	}
 
 	public String addCallbck(IMessageCallback cb, Message message,
@@ -105,6 +178,7 @@ public class MessagingService implements MessagingServiceMBean {
 	}
 	
 	private static AtomicInteger idGen=new AtomicInteger();
+	
 	private IMessageCallback cb;
 	private static String nextId(){
 		return Integer.toString(idGen.incrementAndGet());
@@ -112,6 +186,16 @@ public class MessagingService implements MessagingServiceMBean {
 
 	public void incrementDroppedMessage(Verb verb) {
 		droppedMessages.get(verb).incrementAndGet();
+	}
+
+	public IVerbHandler getVerbHandler(Verb verb) {
+		return verbHandlers_.get(verb);
+	}
+
+	public void addLatency(InetAddress address, double latency) {
+		for(ILatencySubscriber subscriber:subscribers){
+			subscriber.receiveTiming(address,latency);
+		}
 	}
 
 }

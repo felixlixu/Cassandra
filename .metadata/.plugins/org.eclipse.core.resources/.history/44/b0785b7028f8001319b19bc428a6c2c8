@@ -1,0 +1,32 @@
+package org.apache.cassandra.db;
+
+import java.nio.ByteBuffer;
+import java.util.Collection;
+
+public class ExpiringColumn extends Column {
+
+	private final int timeToLive;
+
+	@Override
+	public ByteBuffer name() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Collection<IColumn> getSubColumns() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int serializationFlags() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public int getTimeToLive() {
+		return timeToLive;
+	}
+
+}

@@ -17,8 +17,8 @@ public interface ISortedColumns extends IIterableColumns {
 	public void addColumn(IColumn column, Allocator allocator);
 	
 	public static class DeletionInfo{
-		private final long markedForDeleteAt;
-		private final int localDeletionTime;
+		public final long markedForDeleteAt;
+		public final int localDeletionTime;
 
 		public DeletionInfo(){
 			this(Long.MIN_VALUE,Integer.MIN_VALUE);
@@ -29,4 +29,6 @@ public interface ISortedColumns extends IIterableColumns {
 			this.localDeletionTime=localDeletionTime;
 		}
 	}
+
+	DeletionInfo getDeletionInfo();
 }

@@ -13,6 +13,6 @@ public interface IResponseResolver<T> {
      */
 	public T getData() throws IOException;
 
-	public T resolve();
+	public T resolve() throws DigestMismatchException;
 
 }

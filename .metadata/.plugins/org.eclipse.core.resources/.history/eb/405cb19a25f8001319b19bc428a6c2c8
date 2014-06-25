@@ -1,0 +1,122 @@
+package org.apache.cassandra.db;
+
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+
+import org.apache.cassandra.db.marshal.AbstractType;
+import org.apache.cassandra.io.IColumnSerializer;
+
+public class SuperColumn extends AbstractColumnContainer implements IColumn {
+
+	private ByteBuffer name;
+
+	protected SuperColumn(ISortedColumns columns) {
+		super(columns);
+		// TODO Auto-generated constructor stub
+	}
+
+	public SuperColumn(ByteBuffer name, AbstractType comparator) {
+		this(name,AtomicSortedColumns.factory().create(comparator,false));
+	}
+
+	public SuperColumn(ByteBuffer name, ISortedColumns columns) {
+		super(columns);
+		assert name!=null;
+		assert name.remaining()<=IColumn.MAX_NAME_LENGTH;
+		this.name=name;
+	}
+
+	public static IColumnSerializer serializer(AbstractType subcolumnComparator) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Iterator<IColumn> iterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int serializedSize() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void addColumn(CounterUpdateColumn column) {
+		
+	}
+
+}
+
+class SuperColumnSerializer implements IColumnSerializer
+{
+    private AbstractType comparator;
+
+    public SuperColumnSerializer(AbstractType comparator)
+    {
+        this.comparator = comparator;
+    }
+
+    public AbstractType getComparator()
+    {
+        return comparator;
+    }
+
+    public void serialize(IColumn column, DataOutput dos)
+    {
+        SuperColumn superColumn = (SuperColumn)column;
+        ByteBufferUtil.writeWithShortLength(column.name(), dos);
+        try
+        {
+            dos.writeInt(superColumn.getLocalDeletionTime());
+            dos.writeLong(superColumn.getMarkedForDeleteAt());
+
+            Collection<IColumn> columns = column.getSubColumns();
+            dos.writeInt(columns.size());
+            for (IColumn subColumn : columns)
+            {
+                Column.serializer().serialize(subColumn, dos);
+            }
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public IColumn deserialize(DataInput dis) throws IOException
+    {
+        return deserialize(dis, IColumnSerializer.Flag.LOCAL);
+    }
+
+    public IColumn deserialize(DataInput dis, IColumnSerializer.Flag flag) throws IOException
+    {
+        return deserialize(dis, flag, (int)(System.currentTimeMillis() / 1000));
+    }
+
+    public IColumn deserialize(DataInput dis, IColumnSerializer.Flag flag, int expireBefore) throws IOException
+    {
+        ByteBuffer name = ByteBufferUtil.readWithShortLength(dis);
+        int localDeleteTime = dis.readInt();
+        if (localDeleteTime != Integer.MIN_VALUE && localDeleteTime <= 0)
+        {
+            throw new IOException("Invalid localDeleteTime read: " + localDeleteTime);
+        }
+        long markedForDeleteAt = dis.readLong();
+
+        /* read the number of columns */
+        int size = dis.readInt();
+        ColumnSerializer serializer = Column.serializer();
+        ColumnSortedMap preSortedMap = new ColumnSortedMap(comparator, serializer, dis, size, flag, expireBefore);
+        SuperColumn superColumn = new SuperColumn(name, AtomicSortedColumns.factory().fromSorted(preSortedMap, false));
+        superColumn.delete(localDeleteTime, markedForDeleteAt);
+        return superColumn;
+    }
+
+    public long serializedSize(IColumn object)
+    {
+        return object.serializedSize();
+    }
+}

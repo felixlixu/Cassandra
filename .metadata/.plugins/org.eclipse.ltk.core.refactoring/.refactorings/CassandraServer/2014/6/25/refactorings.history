@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename package &apos;org.apache.cassandra.db.SuperColumn&apos; to &apos;org.apache.cassandra.db.superColumn&apos;&#x0D;&#x0A;- Original project: &apos;CassandraServer&apos;&#x0D;&#x0A;- Original element: &apos;CassandraServer/src/org.apache.cassandra.db.SuperColumn&apos;&#x0D;&#x0A;- Renamed element: &apos;CassandraServer/src/org.apache.cassandra.db.superColumn&apos;&#x0D;&#x0A;- Update references to refactored element&#x0D;&#x0A;- Update textual occurrences in comments and strings" description="Rename package &apos;org.apache.cassandra.db.SuperColumn&apos;" flags="589830" hierarchical="false" id="org.eclipse.jdt.ui.rename.package" input="/src&lt;org.apache.cassandra.db.SuperColumn" name="org.apache.cassandra.db.superColumn" qualified="false" references="true" stamp="1403235305682" textual="false" version="1.0"/>
+</session>
